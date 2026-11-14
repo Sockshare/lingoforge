@@ -90,6 +90,15 @@ async def _synthesize_edge_tts(text: str, voice: str, rate: str, out_path: Path)
     await communicate.save(str(out_path))
 
 
+def _synthesize_gtts_fallback(text: str, lang_code: str, slow: bool, out_path: Path) -> None:
+    from gtts import gTTS
+
+    gtts_lang_map = {"zh": "zh-CN"}
+    g_lang = gtts_lang_map.get(lang_code, lang_code)
+    tts = gTTS(text=text, lang=g_lang, slow=slow)
+    tts.save(str(out_path))
+
+
 @app.route("/api/tts", methods=["GET"])
 def tts_endpoint():
     text = (request.args.get("text") or "").strip()
@@ -112,8 +121,11 @@ def tts_endpoint():
     if not cached_mp3.exists() or cached_mp3.stat().st_size == 0:
         try:
             asyncio.run(_synthesize_edge_tts(clean_text, voice, rate, cached_mp3))
-        except Exception as exc:
-            return jsonify({"ok": False, "fallback_browser_tts": True, "reason": str(exc)}), 200
+        except Exception:
+            try:
+                _synthesize_gtts_fallback(clean_text, lang_code, slow, cached_mp3)
+            except Exception as exc2:
+                return jsonify({"ok": False, "fallback_browser_tts": True, "reason": str(exc2)}), 200
 
     if cached_mp3.exists() and cached_mp3.stat().st_size > 0:
         return send_file(str(cached_mp3), mimetype="audio/mpeg")
@@ -121,7 +133,73 @@ def tts_endpoint():
     return jsonify({"ok": False, "fallback_browser_tts": True}), 200
 
 
+@app.route("/api/speech_verify", methods=["POST"])
+def speech_verify_endpoint():
+    """Transcribes user microphone audio via ffmpeg + SpeechRecognition and verifies it against the target sentence."""
+    import subprocess
+    import tempfile
+
+    lang_code = (request.form.get("lang_code") or "es").strip()
+    target_sentence = (request.form.get("target_sentence") or "").strip()
+    browser_transcript = (request.form.get("browser_transcript") or "").strip()
+    audio_file = request.files.get("audio")
+
+    lang_cfg = LANGUAGES.get(lang_code, LANGUAGES["es"])
+    speech_lang = lang_cfg.get("speech_lang", "es-ES")
+
+    transcribed_target = ""
+    transcribed_en = ""
+
+    if audio_file:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            in_path = Path(tmpdir) / "input_audio.webm"
+            wav_path = Path(tmpdir) / "converted.wav"
+            audio_file.save(str(in_path))
+
+            # Convert browser WebM/Opus/WAV to 16kHz mono PCM WAV with volume normalization
+            proc = subprocess.run(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-i",
+                    str(in_path),
+                    "-af",
+                    "volume=1.8",
+                    "-ar",
+                    "16000",
+                    "-ac",
+                    "1",
+                    str(wav_path),
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            if proc.returncode == 0 and wav_path.exists() and wav_path.stat().st_size > 200:
+                import speech_recognition as sr
+
+                recognizer = sr.Recognizer()
+                with sr.AudioFile(str(wav_path)) as src:
+                    audio_data = recognizer.record(src)
+                try:
+                    transcribed_target = recognizer.recognize_google(audio_data, language=speech_lang)
+                except Exception:
+                    transcribed_target = ""
+                try:
+                    transcribed_en = recognizer.recognize_google(audio_data, language="en-US")
+                except Exception:
+                    transcribed_en = ""
+
+    res = engine.verify_spoken_pronunciation(
+        lang_code=lang_code,
+        target_sentence=target_sentence,
+        transcribed_target=transcribed_target or browser_transcript,
+        transcribed_en=transcribed_en,
+    )
+    return jsonify({"ok": True, **res})
+
+
 if __name__ == "__main__":
     host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", 8103))
     app.run(host=host, port=port, debug=False)
+

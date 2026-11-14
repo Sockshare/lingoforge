@@ -2819,8 +2819,15 @@
     let ACTIVE_MIC_STREAM = null;
     let ACTIVE_MIC_RAF = null;
     let ACTIVE_SPEECH_REC = null;
+    let ACTIVE_MEDIA_RECORDER = null;
+    let ACTIVE_AUDIO_CHUNKS = [];
+    let ACTIVE_MIC_STOP_TIMER = null;
 
     function stopHardwareMicCapture() {
+      if (ACTIVE_MIC_STOP_TIMER) {
+        clearTimeout(ACTIVE_MIC_STOP_TIMER);
+        ACTIVE_MIC_STOP_TIMER = null;
+      }
       if (ACTIVE_MIC_RAF) {
         cancelAnimationFrame(ACTIVE_MIC_RAF);
         ACTIVE_MIC_RAF = null;
@@ -2829,6 +2836,10 @@
         try { ACTIVE_SPEECH_REC.stop(); } catch (e) {}
         ACTIVE_SPEECH_REC = null;
       }
+      if (ACTIVE_MEDIA_RECORDER && ACTIVE_MEDIA_RECORDER.state !== 'inactive') {
+        try { ACTIVE_MEDIA_RECORDER.stop(); } catch (e) {}
+      }
+      ACTIVE_MEDIA_RECORDER = null;
       if (ACTIVE_MIC_STREAM) {
         ACTIVE_MIC_STREAM.getTracks().forEach(t => t.stop());
         ACTIVE_MIC_STREAM = null;
@@ -2844,11 +2855,10 @@
       AudioSFX.playCorrect();
       const st = document.getElementById('speaking-status');
       if (st) {
-        st.innerHTML = `✅ <b>${reasonMsg}:</b> Pronounced <i>“${targetSentence}”</i> (98% Cadence Match) — Click <b>Submit Answer ✓</b>!`;
+        st.innerHTML = `✅ <b>${reasonMsg}:</b> Simulated <i>“${targetSentence}”</i> — Click <b>Submit Answer ✓</b>!`;
       }
     }
 
-    // Backwards-compatible alias
     function simulateSpeakingCapture(targetSentence) {
       return startHardwareMicCapture(targetSentence);
     }
@@ -2859,10 +2869,13 @@
       const wfBox = document.getElementById('mic-waveform-box');
       const liveTxt = document.getElementById('mic-live-transcript');
       const micBtn = document.getElementById('live-mic-btn');
+      if (st) st.innerHTML = '';
 
-      // Check if browser exposes navigator.mediaDevices.getUserMedia
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        return bypassMicForVM(targetSentence, 'VM Browser (No Hardware Audio Input Detected)');
+        if (st) {
+          st.innerHTML = `<span style="color:var(--duo-red);">⚠️ No microphone input device available in this browser. Use the <b>🖥️ VM / NO MIC? SIMULATE VOICE</b> button if you don't have a mic connected.</span>`;
+        }
+        return;
       }
 
       try {
@@ -2870,11 +2883,41 @@
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
         });
         ACTIVE_MIC_STREAM = stream;
-        if (wfBox) wfBox.style.display = 'block';
-        if (micBtn) micBtn.innerHTML = '⏹️ STOP RECORDING &amp; GRADE VOICE';
-        if (micBtn) micBtn.onclick = () => finishHardwareMicGrading(targetSentence, '');
+        ACTIVE_AUDIO_CHUNKS = [];
 
-        // Live WebAudio frequency visualizer on #mic-waveform-canvas
+        if (wfBox) wfBox.style.display = 'block';
+        if (liveTxt) liveTxt.innerHTML = `🔴 <b>Recording live audio...</b> Read aloud: <i>“${targetSentence}”</i> (then click Stop &amp; Verify)`;
+
+        let browserRecognizedText = '';
+
+        // 1. Start MediaRecorder to capture raw microphone audio for server-side STT (/api/speech_verify)
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
+        const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        ACTIVE_MEDIA_RECORDER = recorder;
+
+        recorder.ondataavailable = (ev) => {
+          if (ev.data && ev.data.size > 0) ACTIVE_AUDIO_CHUNKS.push(ev.data);
+        };
+
+        recorder.onstop = async () => {
+          const audioBlob = new Blob(ACTIVE_AUDIO_CHUNKS, { type: recorder.mimeType || 'audio/webm' });
+          await verifyRecordedSpeechOnServer(targetSentence, audioBlob, browserRecognizedText);
+        };
+
+        recorder.start(200);
+
+        if (micBtn) {
+          micBtn.innerHTML = '⏹️ STOP RECORDING &amp; VERIFY PRONUNCIATION';
+          micBtn.onclick = () => {
+            if (ACTIVE_MEDIA_RECORDER && ACTIVE_MEDIA_RECORDER.state !== 'inactive') {
+              ACTIVE_MEDIA_RECORDER.stop();
+            }
+          };
+        }
+
+        // 2. Live WebAudio frequency visualizer on #mic-waveform-canvas
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioCtx();
         const source = audioCtx.createMediaStreamSource(stream);
@@ -2884,15 +2927,9 @@
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
         const canvas = document.getElementById('mic-waveform-canvas');
         const ctx = canvas ? canvas.getContext('2d') : null;
-        let peakEnergy = 0;
 
         function drawWave() {
           analyser.getByteFrequencyData(dataArray);
-          let sum = 0;
-          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-          const avg = sum / dataArray.length;
-          if (avg > peakEnergy) peakEnergy = avg;
-
           if (ctx && canvas) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const barW = (canvas.width / dataArray.length) - 3;
@@ -2906,9 +2943,8 @@
         }
         ACTIVE_MIC_RAF = requestAnimationFrame(drawWave);
 
-        // Also start Web Speech API SpeechRecognition if supported by Chrome/Edge
+        // 3. Also run browser SpeechRecognition for instant interim transcript preview if supported
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognizedText = '';
         if (SpeechRec) {
           const rec = new SpeechRec();
           ACTIVE_SPEECH_REC = rec;
@@ -2920,46 +2956,95 @@
             for (let i = 0; i < ev.results.length; i++) {
               transcript += ev.results[i][0].transcript;
             }
-            recognizedText = transcript.trim();
-            if (liveTxt) liveTxt.innerHTML = `🎙️ Heard: <b>“${recognizedText}”</b>`;
-          };
-          rec.onend = () => {
-            if (ACTIVE_MIC_STREAM) {
-              finishHardwareMicGrading(targetSentence, recognizedText);
+            browserRecognizedText = transcript.trim();
+            if (liveTxt && browserRecognizedText) {
+              liveTxt.innerHTML = `🎙️ Live Preview: <b>“${browserRecognizedText}”</b>`;
             }
           };
           try { rec.start(); } catch (e) {}
         }
 
-        // Auto-complete after 3.2 seconds of speaking so user doesn't even have to click Stop
-        setTimeout(() => {
-          if (ACTIVE_MIC_STREAM) {
-            finishHardwareMicGrading(targetSentence, recognizedText);
+        // Auto-stop after 4.5 seconds of recording
+        ACTIVE_MIC_STOP_TIMER = setTimeout(() => {
+          if (ACTIVE_MEDIA_RECORDER && ACTIVE_MEDIA_RECORDER.state !== 'inactive') {
+            ACTIVE_MEDIA_RECORDER.stop();
           }
-        }, 3200);
+        }, 4500);
 
       } catch (err) {
-        // VM has no physical microphone attached or permission was denied -> automatically fall back so user is never stuck!
-        return bypassMicForVM(targetSentence, 'VM Audio Passthrough Fallback (No Physical Mic Found)');
+        if (st) {
+          st.innerHTML = `<span style="color:var(--duo-red);">⚠️ Could not access hardware microphone (${err.message || 'Permission or device error'}). Click <b>🖥️ VM / NO MIC? SIMULATE VOICE</b> to simulate.</span>`;
+        }
       }
     }
 
-    function finishHardwareMicGrading(targetSentence, recognizedText) {
+    async function verifyRecordedSpeechOnServer(targetSentence, audioBlob, browserRecognizedText) {
       stopHardwareMicCapture();
       const wfBox = document.getElementById('mic-waveform-box');
-      if (wfBox) wfBox.style.display = 'none';
+      const liveTxt = document.getElementById('mic-live-transcript');
       const micBtn = document.getElementById('live-mic-btn');
+      const st = document.getElementById('speaking-status');
+
+      if (liveTxt) liveTxt.innerHTML = '⏳ Analyzing your spoken words and verifying pronunciation...';
       if (micBtn) {
         micBtn.innerHTML = '🎙️ RECORD AGAIN WITH HARDWARE MICROPHONE';
         micBtn.onclick = () => startHardwareMicCapture(targetSentence);
       }
-      CURRENT_LESSON.selectedAnswer = targetSentence;
-      markAnswerSelected(recognizedText || targetSentence);
-      AudioSFX.playCorrect();
-      const st = document.getElementById('speaking-status');
-      if (st) {
-        const heardLabel = recognizedText ? `Heard <i>“${recognizedText}”</i> → Matched ` : `Hardware Mic Waveform Verified: `;
-        st.innerHTML = `✅ ${heardLabel}<b>“${targetSentence}”</b> — Click <b>Submit Answer ✓</b>!`;
+
+      const formData = new FormData();
+      formData.append('lang_code', (CURRENT_LESSON && CURRENT_LESSON.lang_code) || APP_STATE.profile.active_lang || 'es');
+      formData.append('target_sentence', targetSentence);
+      formData.append('browser_transcript', browserRecognizedText || '');
+      formData.append('audio', audioBlob, 'speech.webm');
+
+      try {
+        const res = await fetch('/api/speech_verify', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (wfBox) wfBox.style.display = 'none';
+
+        // Render word-by-word green/red pronunciation breakdown pills
+        const wordPills = (data.word_results || []).map(w => `
+          <span style="display:inline-block; padding:4px 10px; margin:2px; border-radius:8px; font-size:14px; font-weight:900;
+            background:${w.matched ? 'var(--duo-blue-bg)' : 'var(--duo-red-bg)'};
+            color:${w.matched ? 'var(--duo-blue)' : 'var(--duo-red)'};
+            border:1.5px solid ${w.matched ? 'var(--duo-blue)' : 'var(--duo-red)'};">
+            ${w.matched ? '✓' : '✗'} ${w.word}
+          </span>
+        `).join('');
+
+        // IMPORTANT: Store the ACTUAL transcribed words the user spoke (e.g. "Pickle"), NEVER overwrite with targetSentence!
+        CURRENT_LESSON.selectedAnswer = data.heard_text || '(unrecognized speech)';
+
+        if (data.passed) {
+          AudioSFX.playCorrect();
+          markAnswerSelected(`${data.heard_text} (${data.similarity_pct}% Match)`);
+          if (st) {
+            st.innerHTML = `
+              <div style="padding:12px 16px; border-radius:14px; background:var(--duo-blue-bg); border:2px solid var(--duo-blue); color:var(--text-main); text-align:left;">
+                <div style="font-weight:900; color:var(--duo-blue); font-size:15px;">✅ ${data.message}</div>
+                <div style="margin-top:8px;">${wordPills}</div>
+              </div>
+            `;
+          }
+        } else {
+          AudioSFX.playWrong();
+          // Keep Submit Answer marked with what was heard (or user can Record Again!)
+          const hintEl = document.getElementById('inline-submit-hint');
+          if (hintEl) {
+            hintEl.innerHTML = `❌ Heard: <b style="color:var(--duo-red);">“${data.heard_text}”</b> (${data.similarity_pct}% match) — Click <b>Record Again</b> to retry!`;
+          }
+          if (st) {
+            st.innerHTML = `
+              <div style="padding:12px 16px; border-radius:14px; background:var(--duo-red-bg); border:2px solid var(--duo-red); color:var(--text-main); text-align:left;">
+                <div style="font-weight:900; color:var(--duo-red); font-size:15px;">❌ ${data.message}</div>
+                <div style="margin-top:8px;">${wordPills}</div>
+              </div>
+            `;
+          }
+        }
+      } catch (err) {
+        if (wfBox) wfBox.style.display = 'none';
+        if (st) st.innerHTML = `<span style="color:var(--duo-red);">⚠️ Speech verification failed: ${err.message}</span>`;
       }
     }
 
@@ -3000,15 +3085,25 @@
 
     function skipExercise() {
       if (!CURRENT_LESSON) return;
+      stopHardwareMicCapture();
       CURRENT_LESSON.index++;
       renderCurrentExercise();
     }
 
     async function submitCurrentExercise() {
       if (!CURRENT_LESSON) return;
+      stopHardwareMicCapture();
       const ex = CURRENT_LESSON.exercises[CURRENT_LESSON.index];
-      // If user clicked CHECK right away in demo mode without selecting, auto-fill answer so flow never blocks
       let userAns = CURRENT_LESSON.selectedAnswer;
+      // For speaking exercises, require an actual verified recording (or VM simulation) instead of auto-filling!
+      if (!userAns && ex.type === 'speaking') {
+        const st = document.getElementById('speaking-status');
+        if (st) {
+          st.innerHTML = `<div style="padding:10px 14px; border-radius:12px; background:var(--duo-red-bg); border:1.5px solid var(--duo-red); color:var(--duo-red); font-weight:900;">🎙️ Please record the sentence with your microphone first (or click "VM / No Mic? Simulate Voice") before submitting!</div>`;
+        }
+        AudioSFX.playWrong();
+        return;
+      }
       if (!userAns) {
         userAns = ex.answer;
       }

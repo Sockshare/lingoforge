@@ -393,6 +393,23 @@ class LingoForgeEngine:
                 "explanation": exercise.get("explanation", ""),
             }
 
+        if exercise.get("type") == "speaking":
+            spoken_check = self.verify_spoken_pronunciation(
+                lang_code=lang_code,
+                target_sentence=expected,
+                transcribed_target=user_raw,
+                transcribed_en="",
+            )
+            if spoken_check["passed"]:
+                self._update_srs(exercise.get("target_word_id"), correct=True)
+                return {
+                    "correct": True,
+                    "status": "spoken_verified",
+                    "feedback": f"Pronunciation Verified ({spoken_check['similarity_pct']}% Match)! Heard: “{spoken_check['heard_text']}”",
+                    "correct_answer": expected,
+                    "explanation": exercise.get("explanation", ""),
+                }
+
         norm_user = _normalize_text(user_raw, strip_diacritics=False)
         norm_user_no_acc = _normalize_text(user_raw, strip_diacritics=True)
 
@@ -461,6 +478,86 @@ class LingoForgeEngine:
             "feedback": f"Correct solution: “{expected}”",
             "correct_answer": expected,
             "explanation": exercise.get("explanation", ""),
+        }
+
+    def verify_spoken_pronunciation(
+        self,
+        lang_code: str,
+        target_sentence: str,
+        transcribed_target: str,
+        transcribed_en: str = "",
+    ) -> Dict[str, Any]:
+        """Compares real Speech-to-Text output against the target sentence and returns word-by-word match diagnostics."""
+        norm_expected = _normalize_text(target_sentence, strip_diacritics=True)
+        norm_t = _normalize_text(transcribed_target, strip_diacritics=True)
+        norm_en = _normalize_text(transcribed_en, strip_diacritics=True)
+
+        if not norm_t and not norm_en:
+            return {
+                "passed": False,
+                "similarity_pct": 0,
+                "heard_text": "(No clear speech detected)",
+                "target_sentence": target_sentence,
+                "word_results": [{"word": w, "matched": False} for w in target_sentence.split()],
+                "message": "We couldn't hear any clear words. Please speak louder into your microphone and try again!",
+            }
+
+        def _score_candidate(cand: str) -> float:
+            if not cand or not norm_expected:
+                return 0.0
+            max_len = max(len(norm_expected), len(cand), 1)
+            char_sim = max(0.0, 1.0 - (levenshtein_distance(norm_expected, cand) / max_len))
+            exp_words = [w for w in norm_expected.split() if w]
+            cand_words = [w for w in cand.split() if w]
+            if not exp_words:
+                return char_sim
+            matched_cnt = 0
+            for ew in exp_words:
+                if any(ew == cw or (len(ew) >= 4 and levenshtein_distance(ew, cw) <= 1) for cw in cand_words):
+                    matched_cnt += 1
+            word_sim = matched_cnt / len(exp_words)
+            return max(char_sim, word_sim)
+
+        score_t = _score_candidate(norm_t)
+        score_en = _score_candidate(norm_en)
+
+        best_score = max(score_t, score_en)
+        similarity_pct = int(round(best_score * 100))
+        passed = similarity_pct >= 65
+
+        if passed:
+            heard_display = (transcribed_target if score_t >= score_en else transcribed_en).strip()
+            best_norm = norm_t if score_t >= score_en else norm_en
+        else:
+            # When speech does NOT match the target sentence, prefer showing the English transcript if the user spoke English (e.g. "Pickle")!
+            if transcribed_en and transcribed_target and norm_en != norm_t:
+                heard_display = f"{transcribed_en.strip()} (or in {lang_code.upper()}: {transcribed_target.strip()})"
+            else:
+                heard_display = (transcribed_en or transcribed_target).strip()
+            best_norm = norm_t or norm_en
+
+        heard_tokens = [w for w in best_norm.split() if w]
+        word_results = []
+        for raw_w in target_sentence.split():
+            nw = _normalize_text(raw_w, strip_diacritics=True)
+            is_match = any(
+                nw == hw or (len(nw) >= 4 and levenshtein_distance(nw, hw) <= 1)
+                for hw in heard_tokens
+            ) or (nw and nw in best_norm)
+            word_results.append({"word": raw_w, "matched": bool(is_match)})
+
+        if passed:
+            msg = f"Pronunciation Verified ({similarity_pct}% Match)! Heard: “{heard_display}”"
+        else:
+            msg = f"Mismatch ({similarity_pct}% Match) — We heard “{heard_display}”, which does not match “{target_sentence}”. Please read the sentence aloud again!"
+
+        return {
+            "passed": passed,
+            "similarity_pct": similarity_pct,
+            "heard_text": heard_display,
+            "target_sentence": target_sentence,
+            "word_results": word_results,
+            "message": msg,
         }
 
     def _update_srs(self, word_id: Optional[str], correct: bool) -> None:
