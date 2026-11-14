@@ -827,19 +827,20 @@
     }
 
     .lesson-body {
-      max-width: 720px;
+      max-width: 740px;
       width: 100%;
       margin: 0 auto;
-      padding: 12px 24px 20px;
-      flex: 1;
+      padding: 12px 24px 28px;
+      flex: 1 1 auto;
       min-height: 0;
       overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
+      display: block;
+    }
+    .lesson-body > * {
+      flex-shrink: 0;
     }
     .inline-submit-bar {
-      margin-top: 18px;
+      margin-top: 20px;
       padding-top: 14px;
       border-top: 1.5px dashed var(--border-color);
       display: flex;
@@ -847,6 +848,7 @@
       justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
+      clear: both;
     }
     .btn-submit-disabled {
       opacity: 0.55;
@@ -868,9 +870,9 @@
       margin-bottom: 8px;
     }
     .ex-prompt-title {
-      font-size: 26px;
+      font-size: 25px;
       font-weight: 900;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       line-height: 1.25;
     }
 
@@ -909,25 +911,30 @@
       letter-spacing: 0.9px;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: 6px;
+      margin-top: 14px;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      clear: both;
     }
     .answer-tray {
-      min-height: 76px;
+      min-height: 82px;
+      height: auto !important;
+      flex-shrink: 0 !important;
       background: var(--bg-secondary);
       border: 2px dashed var(--border-dark);
       border-radius: 16px;
-      padding: 12px 16px;
+      padding: 14px 16px;
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      align-items: center;
+      align-items: flex-start;
       align-content: flex-start;
-      margin: 4px 0 18px;
+      margin: 0 0 20px 0;
       position: relative;
       box-sizing: border-box;
+      overflow: visible;
     }
     .answer-tray-placeholder {
       font-size: 14px;
@@ -935,21 +942,25 @@
       color: var(--text-muted);
       opacity: 0.75;
       pointer-events: none;
+      padding: 8px 0;
     }
     .word-bank-pool {
       background: var(--bg-card);
-      border: 1.5px solid var(--border-color);
+      border: 2px solid var(--border-color);
       border-radius: 16px;
       padding: 14px 16px;
-      min-height: 68px;
+      min-height: 76px;
+      height: auto !important;
+      flex-shrink: 0 !important;
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start;
       align-content: flex-start;
-      margin-bottom: 8px;
+      margin: 0 0 16px 0;
       box-sizing: border-box;
+      overflow: visible;
     }
     .word-tile {
       background: var(--bg-card);
