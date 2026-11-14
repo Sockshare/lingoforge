@@ -422,6 +422,58 @@
       border-bottom-color: var(--duo-blue-lip);
       box-shadow: 0 6px 16px rgba(13, 148, 136, 0.24);
     }
+    .stepping-stone.node-completed {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 55%, #b45309 100%) !important;
+      border-color: #fde68a !important;
+      border-bottom-color: #78350f !important;
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.28), 0 8px 20px rgba(217, 119, 6, 0.36) !important;
+    }
+    .stepping-stone.node-just-completed {
+      animation: completedNodePulse 1.1s ease-in-out 4;
+    }
+    @keyframes completedNodePulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.35), 0 8px 20px rgba(217, 119, 6, 0.4); }
+      50% { transform: scale(1.16) translateY(-4px); box-shadow: 0 0 0 12px rgba(245, 158, 11, 0.0), 0 14px 28px rgba(234, 88, 12, 0.55); }
+    }
+    .completed-check-ribbon {
+      position: absolute;
+      top: -7px;
+      right: -7px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #10b981;
+      border: 2.5px solid #ffffff;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 8px rgba(16, 185, 129, 0.45);
+      z-index: 4;
+    }
+    .crown-pill.completed-pill {
+      background: var(--duo-gold-bg);
+      border-color: var(--duo-gold);
+      color: var(--duo-gold-lip);
+    }
+    @keyframes partyMascotDance {
+      0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+      25% { transform: translateY(-14px) rotate(-6deg) scale(1.06); }
+      75% { transform: translateY(-10px) rotate(6deg) scale(1.06); }
+    }
+    .party-mascot-anim {
+      animation: partyMascotDance 0.9s ease-in-out infinite;
+      display: inline-block;
+    }
+    @keyframes statCardPop {
+      0% { opacity: 0; transform: translateY(18px) scale(0.88); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .party-stat-card {
+      animation: statCardPop 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    }
 
     .crown-pill {
       margin-top: 7px;
@@ -1566,6 +1618,8 @@
     // =========================================================================
     // 1. LEARN TAB: Winding Skill Tree & Unit Guidebooks
     // =========================================================================
+    let LAST_COMPLETED_NODE_ID = null;
+
     function renderSkillTree() {
       const mount = document.getElementById('skill-tree-mount');
       const iconMap = {
@@ -1577,25 +1631,52 @@
         trophy: '🏆'
       };
 
+      // Find the first uncompleted lesson node across all units so the floating START badge advances automatically!
+      let nextUpNodeId = null;
+      for (const u of APP_STATE.units) {
+        for (const n of u.nodes) {
+          if ((n.type === 'lesson' || n.type === 'trophy') && !n.completed && (n.crowns || 0) === 0) {
+            nextUpNodeId = n.id;
+            break;
+          }
+        }
+        if (nextUpNodeId) break;
+      }
+
       mount.innerHTML = APP_STATE.units.map((unit, uIdx) => {
+        const completedCount = unit.nodes.filter(n => n.completed || (n.crowns || 0) > 0).length;
         const nodesHTML = unit.nodes.map((node, nIdx) => {
-          const isFirstActive = uIdx === 0 && nIdx === 0;
+          const isCompleted = Boolean(node.completed || (node.crowns || 0) > 0);
+          const isJustCompleted = (LAST_COMPLETED_NODE_ID === node.id);
+          const isNextUp = (node.id === nextUpNodeId);
+
           let stoneClass = '';
-          if (node.type === 'roleplay') stoneClass = 'node-max';
+          if (isCompleted) stoneClass = 'node-completed';
+          else if (node.type === 'roleplay') stoneClass = 'node-max';
           else if (node.type === 'story') stoneClass = 'node-story';
           else if (node.type === 'trophy') stoneClass = 'node-trophy';
           else if (uIdx % 2 === 1) stoneClass = 'node-blue';
 
-          const badgeText = node.type === 'roleplay' ? 'FORGE AI ROLEPLAY' : (node.type === 'story' ? 'FOLIO STORY' : (isFirstActive ? 'START +20 XP' : ''));
+          if (isJustCompleted) stoneClass += ' node-just-completed';
+
+          let badgeText = '';
+          if (isJustCompleted) badgeText = '✨ COMPLETED!';
+          else if (isNextUp) badgeText = `START +${node.xp_reward || 25} XP`;
+          else if (node.type === 'roleplay') badgeText = 'FORGE AI ROLEPLAY';
+          else if (node.type === 'story') badgeText = 'FOLIO STORY';
 
           return `
-            <div class="path-node-wrapper" style="transform: translateX(${node.offset_x || 0}px);">
-              ${badgeText ? `<div class="start-floating-badge">${badgeText}</div>` : ''}
+            <div class="path-node-wrapper" id="map-node-${node.id}" style="transform: translateX(${node.offset_x || 0}px);">
+              ${badgeText ? `<div class="start-floating-badge" style="${isCompleted ? 'border-color:#10b981; color:#059669;' : ''}">${badgeText}</div>` : ''}
               <button class="stepping-stone ${stoneClass}" onclick="handleNodeClick('${node.id}', '${node.type}', '${node.story_id || ''}', '${node.scenario_id || ''}')">
+                ${isCompleted ? `<span class="completed-check-ribbon" title="Lesson Completed">✓</span>` : ''}
                 <span>${iconMap[node.icon] || '⭐'}</span>
               </button>
-              <div class="crown-pill">👑 ${node.crowns}/${node.max_crowns}</div>
+              <div class="crown-pill ${isCompleted ? 'completed-pill' : ''}">
+                ${isCompleted ? '✅ COMPLETED • ' : ''}👑 ${node.crowns}/${node.max_crowns}
+              </div>
               <div class="node-caption">${node.title}</div>
+              ${node.subtitle ? `<div style="font-size:11px; font-weight:700; color:var(--text-muted); text-align:center; max-width:210px;">${node.subtitle}</div>` : ''}
             </div>
           `;
         }).join('');
@@ -1604,7 +1685,9 @@
           <div style="margin-bottom: 34px; position:relative;">
             <div class="unit-banner" style="background:${unit.color}; border-bottom-color:${unit.border_color};">
               <div>
-                <div style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1px; opacity:0.9;">${unit.section}</div>
+                <div style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1px; opacity:0.9;">
+                  ${unit.section} • ${completedCount}/${unit.nodes.length} COMPLETED
+                </div>
                 <h2>${unit.title}</h2>
                 <p>${unit.subtitle}</p>
               </div>
@@ -1616,7 +1699,7 @@
             <div class="skill-path-container">
               ${uIdx === 0 ? `
                 <div class="duo-companion-box" onclick="cheerDuoCompanion()">
-                  <div class="duo-speech-bubble" id="duo-bubble-text">¡Hola! I'm Kitsu — click any waypoint tile or 👑 Forge AI node!</div>
+                  <div class="duo-speech-bubble" id="duo-bubble-text">¡Hola! I'm Kitsu — complete all 40 lessons from A1 to C1 fluency!</div>
                   ${getKitsuMascotSVG()}
                 </div>
               ` : ''}
@@ -1650,6 +1733,13 @@
     }
 
     function startQuickLesson() {
+      for (const u of (APP_STATE.units || [])) {
+        for (const n of (u.nodes || [])) {
+          if ((n.type === 'lesson' || n.type === 'trophy') && !n.completed && (n.crowns || 0) === 0) {
+            return startLesson(n.id);
+          }
+        }
+      }
       const firstNode = APP_STATE.units[0]?.nodes?.[0]?.id || `${APP_STATE.profile.active_lang}_u1_n1`;
       return startLesson(firstNode);
     }
@@ -2245,9 +2335,100 @@
       renderCurrentExercise();
     }
 
+    let PARTY_CONFETTI_RAF = null;
+
+    function stopPartyConfetti() {
+      if (PARTY_CONFETTI_RAF) {
+        cancelAnimationFrame(PARTY_CONFETTI_RAF);
+        PARTY_CONFETTI_RAF = null;
+      }
+      const existing = document.getElementById('party-confetti-canvas');
+      if (existing) existing.remove();
+    }
+
+    function launchPartyConfetti() {
+      stopPartyConfetti();
+      const overlay = document.getElementById('lesson-overlay');
+      if (!overlay) return;
+      const canvas = document.createElement('canvas');
+      canvas.id = 'party-confetti-canvas';
+      canvas.width = window.innerWidth || 1440;
+      canvas.height = window.innerHeight || 940;
+      canvas.style.cssText = 'position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:250;';
+      overlay.appendChild(canvas);
+      const ctx = canvas.getContext('2d');
+
+      const colors = ['#f59e0b', '#4f46e5', '#10b981', '#ea580c', '#ec4899', '#06b6d4', '#fde047'];
+      const particles = Array.from({ length: 130 }, (_, i) => {
+        const fromLeft = i % 2 === 0;
+        return {
+          x: fromLeft ? canvas.width * 0.15 : canvas.width * 0.85,
+          y: canvas.height * 0.62,
+          vx: (fromLeft ? 1 : -1) * (4 + Math.random() * 11) + (Math.random() - 0.5) * 4,
+          vy: -(10 + Math.random() * 14),
+          size: 7 + Math.random() * 7,
+          color: colors[i % colors.length],
+          rot: Math.random() * Math.PI * 2,
+          vrot: (Math.random() - 0.5) * 0.25,
+          shape: i % 3 // 0: rect, 1: circle, 2: star-diamond
+        };
+      });
+
+      let frame = 0;
+      function tick() {
+        frame++;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = 0;
+        for (const p of particles) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.36; // gravity
+          p.vx *= 0.99;
+          p.rot += p.vrot;
+          if (p.y < canvas.height + 40) alive++;
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          if (p.shape === 0) {
+            ctx.fillRect(-p.size / 2, -p.size / 3, p.size, p.size * 0.66);
+          } else if (p.shape === 1) {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size * 0.45, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.beginPath();
+            ctx.moveTo(0, -p.size * 0.6);
+            ctx.lineTo(p.size * 0.5, 0);
+            ctx.lineTo(0, p.size * 0.6);
+            ctx.lineTo(-p.size * 0.5, 0);
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+        if (alive > 0 && frame < 240) {
+          PARTY_CONFETTI_RAF = requestAnimationFrame(tick);
+        } else {
+          stopPartyConfetti();
+        }
+      }
+      PARTY_CONFETTI_RAF = requestAnimationFrame(tick);
+    }
+
     function closeLessonOverlay() {
+      stopPartyConfetti();
+      const finishedNodeId = LAST_COMPLETED_NODE_ID;
       document.getElementById('lesson-overlay').classList.remove('open');
       CURRENT_LESSON = null;
+      if (finishedNodeId) {
+        renderSkillTree();
+        setTimeout(() => {
+          const el = document.getElementById(`map-node-${finishedNodeId}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 120);
+      }
     }
 
     function renderCurrentExercise() {
@@ -2620,6 +2801,8 @@
       document.getElementById('lesson-progress-bar').style.width = '100%';
       const total = CURRENT_LESSON.exercises.length;
       const accuracy = Math.round((CURRENT_LESSON.correctCount / Math.max(1, total)) * 100);
+      const completedNodeId = CURRENT_LESSON.node_id;
+      LAST_COMPLETED_NODE_ID = completedNodeId;
 
       const res = await fetch('/api/dispatch', {
         method: 'POST',
@@ -2627,7 +2810,7 @@
         body: JSON.stringify({
           action: 'COMPLETE_LESSON',
           payload: {
-            node_id: CURRENT_LESSON.node_id,
+            node_id: completedNodeId,
             xp_earned: 25,
             accuracy
           }
@@ -2639,37 +2822,65 @@
         renderAll();
       }
 
+      const xpAwarded = data.xp_awarded || 30;
+      const gemsAwarded = data.gems_awarded || 15;
+      const newCrownCount = data.new_crowns || 1;
+
       const stage = document.getElementById('lesson-stage-mount');
       stage.innerHTML = `
-        <div style="text-align:center;">
-          <div style="display:flex; justify-content:center; margin-bottom:12px;">
-            ${getKitsuMascotSVG()}
+        <div style="text-align:center; position:relative; padding:10px 0;">
+          <div style="display:inline-flex; align-items:center; gap:8px; padding:6px 16px; border-radius:999px; background:var(--duo-gold-bg); border:2px solid var(--duo-gold); color:var(--duo-gold-lip); font-size:12px; font-weight:900; letter-spacing:1px; text-transform:uppercase; margin-bottom:14px;">
+            🎊 LESSON COMPLETE • CROWN LEVEL ${newCrownCount} UNLOCKED! 🎊
           </div>
-          <h1 style="font-size:34px; font-weight:900; color:var(--duo-gold-lip); margin-bottom:6px;">🎉 Lesson Complete!</h1>
-          <p style="font-size:16px; font-weight:800; color:var(--text-muted); margin-bottom:24px;">
-            You mastered all 8 interactive LingoForge mechanics and strengthened your SRS memory!
+          <div style="display:flex; justify-content:center; margin-bottom:14px;">
+            <div class="party-mascot-anim">
+              ${getKitsuMascotSVG()}
+            </div>
+          </div>
+          <h1 style="font-size:36px; font-weight:900; color:var(--duo-gold-lip); margin-bottom:6px;">
+            🎉 Forge Lesson Complete!
+          </h1>
+          <p style="font-size:15px; font-weight:800; color:var(--text-muted); margin-bottom:24px;">
+            This lesson is now highlighted in <b style="color:var(--duo-gold-lip);">Mastered Gold (✓)</b> on your curriculum map!
           </p>
-          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; max-width:520px; margin:0 auto;">
-            <div class="side-card" style="border-color:var(--duo-gold);">
-              <div style="font-size:12px; font-weight:900; color:var(--duo-gold-lip);">TOTAL XP</div>
-              <div style="font-size:28px; font-weight:900;">⚡ +${data.xp_awarded || 30}</div>
+          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; max-width:640px; margin:0 auto;">
+            <div class="side-card party-stat-card" style="border-color:var(--duo-gold); animation-delay:0.05s;">
+              <div style="font-size:11px; font-weight:900; color:var(--duo-gold-lip);">XP EARNED</div>
+              <div style="font-size:26px; font-weight:900;" id="party-xp-counter">⚡ +0</div>
             </div>
-            <div class="side-card" style="border-color:var(--duo-green);">
-              <div style="font-size:12px; font-weight:900; color:var(--duo-green);">ACCURACY</div>
-              <div style="font-size:28px; font-weight:900;">🎯 ${accuracy}%</div>
+            <div class="side-card party-stat-card" style="border-color:var(--duo-green); animation-delay:0.15s;">
+              <div style="font-size:11px; font-weight:900; color:var(--duo-green);">ACCURACY</div>
+              <div style="font-size:26px; font-weight:900;">🎯 ${accuracy}%</div>
             </div>
-            <div class="side-card" style="border-color:var(--duo-blue);">
-              <div style="font-size:12px; font-weight:900; color:var(--duo-blue);">GEMS EARNED</div>
-              <div style="font-size:28px; font-weight:900;">💎 +${data.gems_awarded || 15}</div>
+            <div class="side-card party-stat-card" style="border-color:var(--duo-blue); animation-delay:0.25s;">
+              <div style="font-size:11px; font-weight:900; color:var(--duo-blue);">GEMS BONUS</div>
+              <div style="font-size:26px; font-weight:900;">💎 +${gemsAwarded}</div>
+            </div>
+            <div class="side-card party-stat-card" style="border-color:var(--duo-orange); animation-delay:0.35s;">
+              <div style="font-size:11px; font-weight:900; color:var(--duo-orange);">DAILY STREAK</div>
+              <div style="font-size:26px; font-weight:900;">🔥 ${APP_STATE.profile.streak}d</div>
             </div>
           </div>
         </div>
       `;
 
       document.getElementById('lesson-footer-inner').innerHTML = `
-        <div></div>
-        <button class="btn-3d btn-green" onclick="closeLessonOverlay()">CLAIM REWARDS &amp; CONTINUE ➔</button>
+        <div style="font-weight:900; font-size:14px; color:var(--duo-green);">
+          ✅ Node <code>${completedNodeId}</code> marked Completed on Map (+1 👑 Crown)
+        </div>
+        <button class="btn-3d btn-green" onclick="closeLessonOverlay()">CLAIM REWARDS &amp; VIEW ON MAP ➔</button>
       `;
+
+      // Launch confetti party cannon + animate XP count-up
+      launchPartyConfetti();
+      const xpEl = document.getElementById('party-xp-counter');
+      let curXp = 0;
+      const step = Math.max(1, Math.ceil(xpAwarded / 20));
+      const timer = setInterval(() => {
+        curXp = Math.min(xpAwarded, curXp + step);
+        if (xpEl) xpEl.textContent = `⚡ +${curXp}`;
+        if (curXp >= xpAwarded) clearInterval(timer);
+      }, 30);
     }
 
     // =========================================================================

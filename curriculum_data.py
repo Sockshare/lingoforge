@@ -13,7 +13,7 @@ LANGUAGES: Dict[str, Dict[str, Any]] = {
         "native_name": "Español",
         "flag": "🇪🇸",
         "learners": "48.2M",
-        "cefr_range": "A1 – B2",
+        "cefr_range": "A1 – C1 (8 Units • 40 Lessons)",
         "voice_female": "es-ES-ElviraNeural",
         "voice_male": "es-MX-JorgeNeural",
         "speech_lang": "es-ES",
@@ -27,7 +27,7 @@ LANGUAGES: Dict[str, Dict[str, Any]] = {
         "native_name": "Français",
         "flag": "🇫🇷",
         "learners": "32.9M",
-        "cefr_range": "A1 – B2",
+        "cefr_range": "A1 – C1 (8 Units • 40 Lessons)",
         "voice_female": "fr-FR-DeniseNeural",
         "voice_male": "fr-FR-HenriNeural",
         "speech_lang": "fr-FR",
@@ -41,7 +41,7 @@ LANGUAGES: Dict[str, Dict[str, Any]] = {
         "native_name": "日本語",
         "flag": "🇯🇵",
         "learners": "24.6M",
-        "cefr_range": "A1 – B1",
+        "cefr_range": "A1 – C1 (8 Units • 40 Lessons)",
         "voice_female": "ja-JP-NanamiNeural",
         "voice_male": "ja-JP-KeitaNeural",
         "speech_lang": "ja-JP",
@@ -55,7 +55,7 @@ LANGUAGES: Dict[str, Dict[str, Any]] = {
         "native_name": "Deutsch",
         "flag": "🇩🇪",
         "learners": "18.4M",
-        "cefr_range": "A1 – B2",
+        "cefr_range": "A1 – C1 (8 Units • 40 Lessons)",
         "voice_female": "de-DE-KatjaNeural",
         "voice_male": "de-DE-ConradNeural",
         "speech_lang": "de-DE",
@@ -69,7 +69,7 @@ LANGUAGES: Dict[str, Dict[str, Any]] = {
         "native_name": "Italiano",
         "flag": "🇮🇹",
         "learners": "14.8M",
-        "cefr_range": "A1 – B1",
+        "cefr_range": "A1 – C1 (8 Units • 40 Lessons)",
         "voice_female": "it-IT-ElsaNeural",
         "voice_male": "it-IT-DiegoNeural",
         "speech_lang": "it-IT",
@@ -83,7 +83,7 @@ LANGUAGES: Dict[str, Dict[str, Any]] = {
         "native_name": "한국어",
         "flag": "🇰🇷",
         "learners": "17.1M",
-        "cefr_range": "A1 – B1",
+        "cefr_range": "A1 – C1 (8 Units • 40 Lessons)",
         "voice_female": "ko-KR-SunHiNeural",
         "voice_male": "ko-KR-InJoonNeural",
         "speech_lang": "ko-KR",
@@ -97,7 +97,7 @@ LANGUAGES: Dict[str, Dict[str, Any]] = {
         "native_name": "中文 (普通话)",
         "flag": "🇨🇳",
         "learners": "12.9M",
-        "cefr_range": "A1 – B1",
+        "cefr_range": "A1 – C1 (8 Units • 40 Lessons)",
         "voice_female": "zh-CN-XiaoxiaoNeural",
         "voice_male": "zh-CN-YunxiNeural",
         "speech_lang": "zh-CN",
@@ -111,7 +111,7 @@ LANGUAGES: Dict[str, Dict[str, Any]] = {
         "native_name": "Português",
         "flag": "🇧🇷",
         "learners": "11.5M",
-        "cefr_range": "A1 – B1",
+        "cefr_range": "A1 – C1 (8 Units • 40 Lessons)",
         "voice_female": "pt-BR-FranciscaNeural",
         "voice_male": "pt-BR-AntonioNeural",
         "speech_lang": "pt-BR",
@@ -125,7 +125,7 @@ LANGUAGES: Dict[str, Dict[str, Any]] = {
         "native_name": "Русский",
         "flag": "🇷🇺",
         "learners": "9.4M",
-        "cefr_range": "A1 – B1",
+        "cefr_range": "A1 – C1 (8 Units • 40 Lessons)",
         "voice_female": "ru-RU-SvetlanaNeural",
         "voice_male": "ru-RU-DmitryNeural",
         "speech_lang": "ru-RU",
@@ -139,7 +139,7 @@ LANGUAGES: Dict[str, Dict[str, Any]] = {
         "native_name": "العربية",
         "flag": "🇸🇦",
         "learners": "8.7M",
-        "cefr_range": "A1 – B1",
+        "cefr_range": "A1 – C1 (8 Units • 40 Lessons)",
         "voice_female": "ar-SA-ZariyahNeural",
         "voice_male": "ar-SA-HamedNeural",
         "speech_lang": "ar-SA",
@@ -619,374 +619,304 @@ LANGUAGE_PACKS: Dict[str, Dict[str, Any]] = {
 }
 
 
+from curriculum_expansion import UNIT_BLUEPRINTS, _build_40_rows_for_lang
+import re as _re
+
+
+def _parse_lesson_index(node_id: str) -> int:
+    """Maps any node_id (e.g. es_u1_n1 .. es_u8_n5, es_u2_trophy, etc.) to a unique lesson index 0..39."""
+    m = _re.search(r"_u(\d+)_n(\d+)", node_id)
+    if m:
+        u = max(1, min(8, int(m.group(1))))
+        n = max(1, min(5, int(m.group(2))))
+        return (u - 1) * 5 + (n - 1)
+    m_trophy = _re.search(r"_u(\d+)_trophy", node_id)
+    if m_trophy:
+        u = max(1, min(8, int(m_trophy.group(1))))
+        return (u - 1) * 5 + 4
+    m_prac = _re.search(r"_u(\d+)_practice", node_id)
+    if m_prac:
+        u = max(1, min(8, int(m_prac.group(1))))
+        return (u - 1) * 5 + 2
+    # Deterministic hash fallback for custom AI units
+    return sum(ord(ch) for ch in node_id) % 40
+
+
+def _tokenize_sentence(sent: str, lang_code: str) -> List[str]:
+    if " " in sent:
+        return [tok for tok in sent.split(" ") if tok]
+    # For CJK sentences without spaces (ja, zh), split into 2-3 char chunks so word bank has 4-7 tactile tiles
+    clean = sent.strip()
+    step = 2 if len(clean) <= 12 else 3
+    return [clean[i : i + step] for i in range(0, len(clean), step)]
+
+
 def build_course_units(lang_code: str) -> List[Dict[str, Any]]:
-    """Builds the structured CEFR skill-tree units & stepping-stone nodes for a language."""
+    """Builds the 8-Unit CEFR A1–C1 skill tree (40 unique lessons + stories & roleplay missions) for a language."""
     lang = LANGUAGES.get(lang_code, LANGUAGES["es"])
-    pack = LANGUAGE_PACKS.get(lang_code, LANGUAGE_PACKS["es"])
-    vocab = pack["vocab"]
-    sentences = pack["sentences"]
+    rows_40 = _build_40_rows_for_lang(lang_code)
+    units: List[Dict[str, Any]] = []
 
-    v0 = vocab[0] if len(vocab) > 0 else LANGUAGE_PACKS["es"]["vocab"][0]
-    v1 = vocab[1] if len(vocab) > 1 else LANGUAGE_PACKS["es"]["vocab"][1]
-    v2 = vocab[2] if len(vocab) > 2 else LANGUAGE_PACKS["es"]["vocab"][2]
-    v3 = vocab[3] if len(vocab) > 3 else LANGUAGE_PACKS["es"]["vocab"][0]
-    s0 = sentences[0]
-    s1 = sentences[1] if len(sentences) > 1 else sentences[0]
-    s2 = sentences[2] if len(sentences) > 2 else sentences[0]
+    for bp in UNIT_BLUEPRINTS:
+        u_num = bp["unit_number"]
+        base_idx = (u_num - 1) * 5
+        unit_rows = rows_40[base_idx : base_idx + 5]
 
-    return [
-        {
-            "unit_number": 1,
-            "id": f"{lang_code}_unit_1",
-            "section": "Section 1: CEFR A1 Apprentice",
-            "title": "Unit 1: Order in a Café & Polite Greetings",
-            "subtitle": f"Introduce yourself, order drinks & pastries, and use polite {lang['name']} requests.",
-            "color": "#4f46e5",
-            "border_color": "#3730a3",
-            "guidebook": {
-                "title": f"Unit 1 Guidebook: Café & Greetings ({lang['name']})",
-                "summary": f"Master foundational {lang['name']} nouns, gender/articles, and polite ordering verbs.",
-                "grammar_tip": s0["grammar_tip"],
-                "cultural_note": f"In {lang['name']}-speaking cafés, always greet the staff before placing your order.",
-                "key_phrases": [
-                    {"native": s0["target"], "english": s0["english"]},
-                    {"native": v0["word"], "english": v0["translation"]},
-                    {"native": v1["word"], "english": v1["translation"]},
-                    {"native": v2["word"], "english": v2["translation"]},
-                ],
-            },
-            "nodes": [
+        key_phrases = [
+            {"native": r[4], "english": r[5]}
+            for r in unit_rows
+        ]
+        for r in unit_rows[:3]:
+            key_phrases.append({"native": r[0], "english": r[1]})
+
+        nodes: List[Dict[str, Any]] = []
+        for l_idx, (l_title, l_sub, l_icon, l_offset) in enumerate(bp["lessons"], 1):
+            row = unit_rows[l_idx - 1]
+            node_type = "trophy" if l_icon == "trophy" else "lesson"
+            nodes.append(
                 {
-                    "id": f"{lang_code}_u1_n1",
-                    "type": "lesson",
-                    "title": "Café Essentials",
-                    "subtitle": "Coffee, Water & Polite Orders",
-                    "icon": "star",
-                    "offset_x": 0,
-                    "max_crowns": 5,
-                    "xp_reward": 20,
+                    "id": f"{lang_code}_u{u_num}_n{l_idx}",
+                    "type": node_type,
+                    "lesson_number": base_idx + l_idx,
+                    "title": f"Lesson {base_idx + l_idx}: {l_title}",
+                    "subtitle": f"{row[0]} • {l_sub}",
+                    "icon": l_icon,
+                    "offset_x": l_offset,
+                    "max_crowns": 1 if node_type == "trophy" else 5,
+                    "xp_reward": 50 if node_type == "trophy" else (20 + u_num * 5),
+                }
+            )
+            # Interleave Voiced Story & Forge AI Roleplay on Units 1 and 2
+            if l_idx == 2 and bp.get("has_story"):
+                nodes.append(
+                    {
+                        "id": f"{lang_code}_u{u_num}_story",
+                        "type": "story",
+                        "story_id": f"{lang_code}_{bp['has_story']}",
+                        "title": "Folio Story: Café & Travel Chronicles",
+                        "subtitle": "Interactive Voiced Story (+35 XP)",
+                        "icon": "story",
+                        "offset_x": -64 if u_num == 1 else 64,
+                        "max_crowns": 1,
+                        "xp_reward": 35,
+                    }
+                )
+            if l_idx == 3 and bp.get("has_roleplay"):
+                nodes.append(
+                    {
+                        "id": f"{lang_code}_u{u_num}_roleplay",
+                        "type": "roleplay",
+                        "scenario_id": f"{lang_code}_{bp['has_roleplay']}",
+                        "title": "Forge AI Roleplay Mission",
+                        "subtitle": "Live Conversational AI (+40 XP)",
+                        "icon": "max",
+                        "offset_x": 44 if u_num == 1 else -44,
+                        "max_crowns": 1,
+                        "xp_reward": 40,
+                    }
+                )
+
+        units.append(
+            {
+                "unit_number": u_num,
+                "id": f"{lang_code}_unit_{u_num}",
+                "section": bp["section"],
+                "title": bp["title"],
+                "subtitle": bp["subtitle"],
+                "color": bp["color"],
+                "border_color": bp["border_color"],
+                "guidebook": {
+                    "title": f"Unit {u_num} Guidebook — {bp['title']} ({lang['name']})",
+                    "summary": f"{bp['subtitle']} Covers Lessons {base_idx + 1}–{base_idx + 5}.",
+                    "grammar_tip": unit_rows[0][7],
+                    "cultural_note": f"Mastering {bp['section']} brings you step-by-step from foundational survival phrases to full {lang['name']} fluency.",
+                    "key_phrases": key_phrases,
                 },
-                {
-                    "id": f"{lang_code}_u1_n2",
-                    "type": "lesson",
-                    "title": "Bakery & Prices",
-                    "subtitle": "Sentence Building & Listening",
-                    "icon": "book",
-                    "offset_x": -58,
-                    "max_crowns": 5,
-                    "xp_reward": 25,
-                },
-                {
-                    "id": f"{lang_code}_u1_story",
-                    "type": "story",
-                    "story_id": f"{lang_code}_story_cafe",
-                    "title": "Story: Morning at the Café",
-                    "subtitle": "Interactive Voiced Story (+30 XP)",
-                    "icon": "story",
-                    "offset_x": -82,
-                    "max_crowns": 1,
-                    "xp_reward": 30,
-                },
-                {
-                    "id": f"{lang_code}_u1_roleplay",
-                    "type": "roleplay",
-                    "scenario_id": f"{lang_code}_rp_cafe",
-                    "title": "Forge AI Roleplay: The Artisanal Barista",
-                    "subtitle": "Forge AI Live Conversation",
-                    "icon": "max",
-                    "offset_x": -40,
-                    "max_crowns": 1,
-                    "xp_reward": 40,
-                },
-                {
-                    "id": f"{lang_code}_u1_practice",
-                    "type": "practice",
-                    "title": "Personalized SRS Practice",
-                    "subtitle": "Strengthen Weak Words & Refill Spark",
-                    "icon": "dumbbell",
-                    "offset_x": 38,
-                    "max_crowns": 3,
-                    "xp_reward": 20,
-                },
-                {
-                    "id": f"{lang_code}_u1_trophy",
-                    "type": "trophy",
-                    "title": "Unit 1 Masterwork Review",
-                    "subtitle": "Complete all 8 exercise mechanics",
-                    "icon": "trophy",
-                    "offset_x": 0,
-                    "max_crowns": 1,
-                    "xp_reward": 50,
-                },
-            ],
-        },
-        {
-            "unit_number": 2,
-            "id": f"{lang_code}_unit_2",
-            "section": "Section 1: CEFR A1 Wayfinder",
-            "title": "Unit 2: Navigate Trains, Hotels & Directions",
-            "subtitle": f"Ask where stations are, buy rail tickets, and check into hotels in {lang['name']}.",
-            "color": "#0d9488",
-            "border_color": "#0f766e",
-            "guidebook": {
-                "title": f"Unit 2 Guidebook: Transit & Directions ({lang['name']})",
-                "summary": "Ask for locations politely, purchase transit tickets, and handle travel checkpoints.",
-                "grammar_tip": s1["grammar_tip"],
-                "cultural_note": "High-speed rail is central to intercity travel; ticket counters appreciate polite openings.",
-                "key_phrases": [
-                    {"native": s1["target"], "english": s1["english"]},
-                    {"native": v3["word"], "english": v3["translation"]},
-                ],
-            },
-            "nodes": [
-                {
-                    "id": f"{lang_code}_u2_n1",
-                    "type": "lesson",
-                    "title": "Stations & Tickets",
-                    "subtitle": "Asking Directions & Transit",
-                    "icon": "star",
-                    "offset_x": 52,
-                    "max_crowns": 5,
-                    "xp_reward": 25,
-                },
-                {
-                    "id": f"{lang_code}_u2_roleplay",
-                    "type": "roleplay",
-                    "scenario_id": f"{lang_code}_rp_station",
-                    "title": "Forge AI Roleplay: Express Train Counter",
-                    "subtitle": "Forge AI Live Conversation",
-                    "icon": "max",
-                    "offset_x": 76,
-                    "max_crowns": 1,
-                    "xp_reward": 40,
-                },
-                {
-                    "id": f"{lang_code}_u2_story",
-                    "type": "story",
-                    "story_id": f"{lang_code}_story_passport",
-                    "title": "Story: The Missing Passport",
-                    "subtitle": "Interactive Voiced Mystery (+35 XP)",
-                    "icon": "story",
-                    "offset_x": 32,
-                    "max_crowns": 1,
-                    "xp_reward": 35,
-                },
-                {
-                    "id": f"{lang_code}_u2_trophy",
-                    "type": "trophy",
-                    "title": "Unit 2 Masterwork Trophy",
-                    "subtitle": "Master Transit & Directions",
-                    "icon": "trophy",
-                    "offset_x": 0,
-                    "max_crowns": 1,
-                    "xp_reward": 50,
-                },
-            ],
-        },
-        {
-            "unit_number": 3,
-            "id": f"{lang_code}_unit_3",
-            "section": "Section 2: CEFR A2 Artisan",
-            "title": "Unit 3: Dining Out, Markets & Compliments",
-            "subtitle": "Request the check, compliment the chef, and shop for fresh ingredients.",
-            "color": "#ea580c",
-            "border_color": "#c2410c",
-            "guidebook": {
-                "title": f"Unit 3 Guidebook: Dining & Market ({lang['name']})",
-                "summary": "Express past satisfaction, ask for the bill, and pair adjectives with nouns.",
-                "grammar_tip": s2["grammar_tip"],
-                "cultural_note": "In most European and Latin American restaurants, the server only brings the bill when you ask for it.",
-                "key_phrases": [
-                    {"native": s2["target"], "english": s2["english"]},
-                ],
-            },
-            "nodes": [
-                {
-                    "id": f"{lang_code}_u3_n1",
-                    "type": "lesson",
-                    "title": "Restaurant & Check",
-                    "subtitle": "Ordering & Paying Politely",
-                    "icon": "star",
-                    "offset_x": -48,
-                    "max_crowns": 5,
-                    "xp_reward": 30,
-                },
-                {
-                    "id": f"{lang_code}_u3_trophy",
-                    "type": "trophy",
-                    "title": "Unit 3 Masterwork Trophy",
-                    "subtitle": "CEFR A2 Milestone Challenge",
-                    "icon": "trophy",
-                    "offset_x": 0,
-                    "max_crowns": 1,
-                    "xp_reward": 60,
-                },
-            ],
-        },
-    ]
+                "nodes": nodes,
+            }
+        )
+
+    return units
 
 
 def build_lesson_exercises(lang_code: str, node_id: str) -> List[Dict[str, Any]]:
     """
-    Generates a full 8-exercise interactive LingoForge lesson covering all 8 signature mechanics:
-    1. visual_select (2x2 SVG Illustrated Flashcards)
-    2. word_bank (Tap-tile sentence builder with hover dictionary tooltips)
-    3. listening (Tap what you hear with 1.0x + 0.65x Slow Turtle button)
-    4. cloze (Fill-in-the-blank grammar & conjugation challenge)
-    5. dialogue (Two-character mini-conversation response)
-    6. speaking (Voice pronunciation grader + waveform)
-    7. match_pairs (5x2 Match Madness vocabulary pair grid)
-    8. free_type (Keyboard translation with Levenshtein typo tolerance & accent bar)
+    Generates a unique 8-exercise interactive LingoForge lesson for any of the 40 lesson nodes (u1_n1 .. u8_n5)
+    covering all 8 signature mechanics with lesson-specific vocabulary, sentences, audio, and grammar explanations.
     """
-    pack = LANGUAGE_PACKS.get(lang_code, LANGUAGE_PACKS["es"])
-    vocab = pack["vocab"]
-    sentences = pack["sentences"]
+    rows_40 = _build_40_rows_for_lang(lang_code)
+    idx = _parse_lesson_index(node_id) % len(rows_40)
 
-    # Pick unit index based on node_id
-    unit_idx = 0
-    if "_u2_" in node_id and len(sentences) > 1:
-        unit_idx = 1
-    elif "_u3_" in node_id and len(sentences) > 2:
-        unit_idx = 2
+    # Primary lesson row + neighbor rows for listening/matching/distractors
+    r_curr = rows_40[idx]
+    r_next = rows_40[(idx + 1) % len(rows_40)]
+    r_third = rows_40[(idx + 2) % len(rows_40)]
+    r_fourth = rows_40[(idx + 3) % len(rows_40)]
+    r_fifth = rows_40[(idx + 4) % len(rows_40)]
 
-    s_primary = sentences[unit_idx % len(sentences)]
-    s_secondary = sentences[(unit_idx + 1) % len(sentences)]
+    w_nat, w_en, rom, icon_name, s_nat, s_en, cloze_w, tip, dq, dq_en = r_curr
+    w2_nat, w2_en, rom2, icon2, s2_nat, s2_en, cloze2_w, tip2, dq2, dq2_en = r_next
 
-    # Ensure at least 4 vocab items for visual cards & match pairs
-    v_items = list(vocab)
-    while len(v_items) < 5:
-        v_items.append(vocab[len(v_items) % len(vocab)])
+    tokens_primary = _tokenize_sentence(s_nat, lang_code)
+    tokens_secondary = _tokenize_sentence(s2_nat, lang_code)
 
-    target_v = v_items[unit_idx % len(v_items)]
-    card_choices = [target_v]
-    for cand in v_items:
-        if cand["id"] != target_v["id"] and len(card_choices) < 4:
-            card_choices.append(cand)
+    distractor_pool = [
+        _tokenize_sentence(r_third[0], lang_code)[0],
+        _tokenize_sentence(r_fourth[0], lang_code)[0],
+        _tokenize_sentence(r_fifth[0], lang_code)[0],
+    ]
+
+    # Build cloze sentence by blanking cloze_w (or first token if not substring)
+    if cloze_w and cloze_w in s_nat:
+        cloze_sentence = s_nat.replace(cloze_w, "___", 1)
+        cloze_answer = cloze_w
+    else:
+        cloze_answer = tokens_primary[0]
+        cloze_sentence = "___ " + " ".join(tokens_primary[1:])
+
+    cloze_options = [cloze_answer]
+    for cand_r in (r_next, r_third, r_fourth):
+        cand_w = cand_r[6] if cand_r[6] != cloze_answer else cand_r[0]
+        if cand_w not in cloze_options:
+            cloze_options.append(cand_w)
+
+    card_rows = [r_curr, r_next, r_third, r_fourth]
+    match_rows = [r_curr, r_next, r_third, r_fourth, r_fifth]
+
+    gloss_map = {t: f"lesson {idx + 1} token" for t in tokens_primary}
+    gloss_map[tokens_primary[0]] = w_en
+
+    pack_vocab = LANGUAGE_PACKS.get(lang_code, LANGUAGE_PACKS["es"])["vocab"]
+    srs_word_id = pack_vocab[idx % len(pack_vocab)]["id"]
 
     exercises: List[Dict[str, Any]] = [
         # 1. Illustrated Visual Flashcard Selection
         {
             "id": f"{node_id}_ex1_visual",
             "type": "visual_select",
-            "badge": "NEW WORD",
-            "prompt": f"Select the correct image for “{target_v['translation']}”",
-            "target_word_id": target_v["id"],
-            "answer": target_v["word"],
-            "audio_text": target_v["word"],
-            "explanation": f"“{target_v['word']}” means “{target_v['translation']}”. {target_v['note']}",
+            "badge": f"LESSON {idx + 1} • NEW VOCABULARY",
+            "prompt": f"Select the correct card for “{w_en}”",
+            "target_word_id": srs_word_id,
+            "answer": w_nat,
+            "audio_text": w_nat,
+            "explanation": f"“{w_nat}” ({rom}) means “{w_en}”. {tip}",
             "cards": [
                 {
-                    "word": c["word"],
-                    "translation": c["translation"],
-                    "roman": c["roman"],
-                    "icon": c["icon"],
+                    "word": cr[0],
+                    "translation": cr[1],
+                    "roman": cr[2],
+                    "icon": cr[3],
                 }
-                for c in card_choices
+                for cr in card_rows
             ],
         },
         # 2. Tap-Tile Word Bank Sentence Builder
         {
             "id": f"{node_id}_ex2_wordbank",
             "type": "word_bank",
-            "badge": "SENTENCE BUILDER",
-            "prompt": "Write this in English or Target Language — Tap the words in order:",
+            "badge": f"LESSON {idx + 1} • SENTENCE BUILDER",
+            "prompt": "Tap the words in order to translate this sentence:",
             "direction": "to_target",
-            "source_text": s_primary["english"],
-            "audio_text": s_primary["target"],
-            "answer": s_primary["target"],
-            "tokens": s_primary["tokens"],
-            "distractors": s_primary["distractors"],
-            "gloss": s_primary["gloss"],
-            "explanation": s_primary["grammar_tip"],
-            "target_word_id": target_v["id"],
+            "source_text": s_en,
+            "audio_text": s_nat,
+            "answer": " ".join(tokens_primary) if " " in s_nat else s_nat,
+            "accepted_answers": [s_nat, " ".join(tokens_primary)],
+            "tokens": tokens_primary,
+            "distractors": distractor_pool,
+            "gloss": gloss_map,
+            "explanation": tip,
+            "target_word_id": srs_word_id,
         },
         # 3. Listening Lab (Normal 1.0x + Slow Turtle 0.65x)
         {
             "id": f"{node_id}_ex3_listening",
             "type": "listening",
-            "badge": "LISTENING LAB",
+            "badge": f"LESSON {idx + 1} • LISTENING LAB",
             "prompt": "Tap what you hear",
-            "audio_text": s_secondary["target"],
-            "answer": s_secondary["target"],
-            "english_translation": s_secondary["english"],
-            "tokens": s_secondary["tokens"],
-            "distractors": s_secondary["distractors"][:3],
-            "explanation": f"Audio transcript: “{s_secondary['target']}” ({s_secondary['english']}). {s_secondary['grammar_tip']}",
-            "target_word_id": v_items[1]["id"],
+            "audio_text": s2_nat,
+            "answer": " ".join(tokens_secondary) if " " in s2_nat else s2_nat,
+            "accepted_answers": [s2_nat, " ".join(tokens_secondary)],
+            "english_translation": s2_en,
+            "tokens": tokens_secondary,
+            "distractors": distractor_pool[:2],
+            "explanation": f"Audio transcript: “{s2_nat}” — {s2_en}. {tip2}",
+            "target_word_id": srs_word_id,
         },
         # 4. Cloze / Fill-in-the-Blank Grammar
         {
             "id": f"{node_id}_ex4_cloze",
             "type": "cloze",
-            "badge": "GRAMMAR FOCUS",
+            "badge": f"LESSON {idx + 1} • GRAMMAR FOCUS",
             "prompt": "Complete the sentence with the correct grammatical form:",
-            "sentence_template": s_primary["cloze_sentence"],
-            "english_hint": s_primary["english"],
-            "audio_text": s_primary["target"],
-            "answer": s_primary["cloze_answer"],
-            "options": s_primary["cloze_options"],
-            "explanation": s_primary["grammar_tip"],
-            "target_word_id": target_v["id"],
+            "sentence_template": cloze_sentence,
+            "english_hint": s_en,
+            "audio_text": s_nat,
+            "answer": cloze_answer,
+            "options": cloze_options,
+            "explanation": tip,
+            "target_word_id": srs_word_id,
         },
         # 5. Mini-Dialogue / Conversation Completion
         {
             "id": f"{node_id}_ex5_dialogue",
             "type": "dialogue",
-            "badge": "CONVERSATION",
+            "badge": f"LESSON {idx + 1} • CONVERSATION",
             "prompt": "Choose the most natural response to complete the conversation:",
-            "speaker_line": s_primary["dialogue_prompt"],
-            "speaker_line_en": s_primary["dialogue_prompt_en"],
-            "audio_text": s_primary["dialogue_prompt"],
-            "answer": s_primary["dialogue_options"][0],
-            "options": s_primary["dialogue_options"],
-            "explanation": f"“{s_primary['dialogue_options'][0]}” directly answers “{s_primary['dialogue_prompt']}”.",
-            "target_word_id": v_items[2]["id"],
+            "speaker_line": dq,
+            "speaker_line_en": dq_en,
+            "audio_text": dq,
+            "answer": s_nat,
+            "options": [s_nat, r_third[4], r_fourth[4]],
+            "explanation": f"“{s_nat}” ({s_en}) is the natural response to “{dq}”.",
+            "target_word_id": srs_word_id,
         },
         # 6. Speaking & Pronunciation Grader
         {
             "id": f"{node_id}_ex6_speaking",
             "type": "speaking",
-            "badge": "SPEAKING LAB",
+            "badge": f"LESSON {idx + 1} • SPEAKING LAB",
             "prompt": "Speak this sentence out loud:",
-            "target_sentence": s_primary["target"],
-            "english_hint": s_primary["english"],
-            "audio_text": s_primary["target"],
-            "answer": s_primary["target"],
-            "explanation": f"Pronunciation check for “{s_primary['target']}”. {s_primary['grammar_tip']}",
-            "target_word_id": target_v["id"],
+            "target_sentence": s_nat,
+            "english_hint": s_en,
+            "audio_text": s_nat,
+            "answer": s_nat,
+            "explanation": f"Pronunciation verified for “{s_nat}”. {tip}",
+            "target_word_id": srs_word_id,
         },
-        # 7. Match Madness (Timed 5x2 Pair Grid)
+        # 7. Match Matrix (5x2 Pair Grid)
         {
             "id": f"{node_id}_ex7_match",
             "type": "match_pairs",
-            "badge": "MATCH MADNESS",
-            "prompt": "Tap the matching pairs! Clear the board to build your combo:",
+            "badge": f"LESSON {idx + 1} • MATCH MATRIX",
+            "prompt": "Tap the matching vocabulary pairs to build your combo:",
             "answer": "ALL_MATCHED",
             "pairs": [
-                {"id": c["id"], "left": c["word"], "right": c["translation"]}
-                for c in v_items[:5]
+                {"id": f"{node_id}_m{m_i}", "left": mr[0], "right": mr[1]}
+                for m_i, mr in enumerate(match_rows)
             ],
-            "explanation": "Great job matching all 5 vocabulary pairs with zero errors!",
-            "target_word_id": v_items[0]["id"],
+            "explanation": "All 5 vocabulary pairs matched with zero errors!",
+            "target_word_id": srs_word_id,
         },
         # 8. Free-Type Translation with Levenshtein Typo Tolerance
         {
             "id": f"{node_id}_ex8_freetype",
             "type": "free_type",
-            "badge": "HARD EXERCISE (+2x XP)",
+            "badge": f"LESSON {idx + 1} • MASTERY CHALLENGE (+2x XP)",
             "prompt": f"Translate this sentence into {LANGUAGES.get(lang_code, LANGUAGES['es'])['name']}:",
-            "source_text": s_primary["english"],
-            "audio_text": s_primary["target"],
-            "answer": s_primary["target"],
+            "source_text": s_en,
+            "audio_text": s_nat,
+            "answer": s_nat,
             "accepted_answers": [
-                s_primary["target"],
-                s_primary["target"].rstrip(".?!"),
+                s_nat,
+                s_nat.rstrip(".?!。？！"),
+                " ".join(tokens_primary),
             ],
-            "explanation": s_primary["grammar_tip"],
-            "target_word_id": target_v["id"],
+            "explanation": tip,
+            "target_word_id": srs_word_id,
         },
     ]
     return exercises
+
 
 
 def build_stories(lang_code: str) -> List[Dict[str, Any]]:
