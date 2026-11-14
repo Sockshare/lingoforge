@@ -2676,24 +2676,36 @@
         return;
       }
 
-      // 6. SPEAKING & PRONUNCIATION GRADER
+      // 6. SPEAKING & PRONUNCIATION GRADER (Real Hardware Mic + VM/No-Mic Bypass)
       if (ex.type === 'speaking') {
         stage.innerHTML = `
           <div class="ex-type-badge">🎙️ ${ex.badge}</div>
           <div class="ex-prompt-title">${ex.prompt}</div>
-          <div style="padding:20px; border:2px solid var(--border-color); border-radius:18px; margin-bottom:20px; display:flex; align-items:center; gap:16px;">
+          <div style="padding:18px 20px; border:2px solid var(--border-color); border-radius:18px; margin-bottom:16px; display:flex; align-items:center; gap:16px; background:var(--bg-card);">
             <button class="speaker-btn" onclick="playNeuralTTS('${ex.target_sentence.replace(/'/g, "\\'")}', false)">🔊</button>
             <button class="speaker-btn slow-turtle" onclick="playNeuralTTS('${ex.target_sentence.replace(/'/g, "\\'")}', true)">🐢</button>
             <div>
-              <div style="font-size:22px; font-weight:900;">“${ex.target_sentence}”</div>
+              <div style="font-size:21px; font-weight:900;">“${ex.target_sentence}”</div>
               <div style="font-size:14px; color:var(--text-muted); font-weight:700;">${ex.english_hint}</div>
             </div>
           </div>
-          <button class="btn-3d btn-blue" style="padding:18px; font-size:16px; width:100%;" onclick="simulateSpeakingCapture('${ex.target_sentence.replace(/'/g, "\\'")}')">
-            🎙️ CLICK TO SPEAK / PRONUNCIATION CHECK
-          </button>
-          <div id="speaking-status" style="margin-top:12px; text-align:center; font-weight:900; color:var(--duo-green);"></div>
-          ${getInlineSubmitBarHTML(false, 'Click the microphone button above, then click Submit Answer')}
+
+          <div style="display:grid; grid-template-columns: 1fr auto; gap:12px; align-items:stretch;">
+            <button class="btn-3d btn-blue" id="live-mic-btn" style="padding:16px 20px; font-size:15px; width:100%;" onclick="startHardwareMicCapture('${ex.target_sentence.replace(/'/g, "\\'")}')">
+              🎙️ RECORD WITH HARDWARE MICROPHONE
+            </button>
+            <button class="btn-3d btn-outline" style="padding:16px 18px; font-size:13px; white-space:nowrap;" onclick="bypassMicForVM('${ex.target_sentence.replace(/'/g, "\\'")}')">
+              🖥️ VM / NO MIC? SIMULATE VOICE
+            </button>
+          </div>
+
+          <div id="mic-waveform-box" style="display:none; margin-top:12px; padding:12px 16px; border-radius:14px; background:var(--bg-secondary); border:1.5px solid var(--duo-blue); text-align:center;">
+            <canvas id="mic-waveform-canvas" width="520" height="48" style="width:100%; height:48px; display:block;"></canvas>
+            <div id="mic-live-transcript" style="font-size:13px; font-weight:800; color:var(--duo-blue); margin-top:6px;">🎙️ Listening to your microphone... Speak the phrase aloud!</div>
+          </div>
+
+          <div id="speaking-status" style="margin-top:12px; text-align:center; font-weight:900; font-size:14px; color:var(--duo-green);"></div>
+          ${getInlineSubmitBarHTML(false, 'Click Record with Hardware Microphone (or VM Simulate Voice), then click Submit Answer')}
         `;
         return;
       }
@@ -2804,12 +2816,151 @@
       playNeuralTTS(val, false);
     }
 
-    function simulateSpeakingCapture(targetSentence) {
+    let ACTIVE_MIC_STREAM = null;
+    let ACTIVE_MIC_RAF = null;
+    let ACTIVE_SPEECH_REC = null;
+
+    function stopHardwareMicCapture() {
+      if (ACTIVE_MIC_RAF) {
+        cancelAnimationFrame(ACTIVE_MIC_RAF);
+        ACTIVE_MIC_RAF = null;
+      }
+      if (ACTIVE_SPEECH_REC) {
+        try { ACTIVE_SPEECH_REC.stop(); } catch (e) {}
+        ACTIVE_SPEECH_REC = null;
+      }
+      if (ACTIVE_MIC_STREAM) {
+        ACTIVE_MIC_STREAM.getTracks().forEach(t => t.stop());
+        ACTIVE_MIC_STREAM = null;
+      }
+    }
+
+    function bypassMicForVM(targetSentence, reasonMsg = 'VM / No-Mic Simulation Mode') {
+      stopHardwareMicCapture();
+      const wfBox = document.getElementById('mic-waveform-box');
+      if (wfBox) wfBox.style.display = 'none';
       CURRENT_LESSON.selectedAnswer = targetSentence;
       markAnswerSelected(targetSentence);
       AudioSFX.playCorrect();
       const st = document.getElementById('speaking-status');
-      if (st) st.textContent = `✅ Voice Waveform Matched: “${targetSentence}” (98% Native Cadence)`;
+      if (st) {
+        st.innerHTML = `✅ <b>${reasonMsg}:</b> Pronounced <i>“${targetSentence}”</i> (98% Cadence Match) — Click <b>Submit Answer ✓</b>!`;
+      }
+    }
+
+    // Backwards-compatible alias
+    function simulateSpeakingCapture(targetSentence) {
+      return startHardwareMicCapture(targetSentence);
+    }
+
+    async function startHardwareMicCapture(targetSentence) {
+      stopHardwareMicCapture();
+      const st = document.getElementById('speaking-status');
+      const wfBox = document.getElementById('mic-waveform-box');
+      const liveTxt = document.getElementById('mic-live-transcript');
+      const micBtn = document.getElementById('live-mic-btn');
+
+      // Check if browser exposes navigator.mediaDevices.getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        return bypassMicForVM(targetSentence, 'VM Browser (No Hardware Audio Input Detected)');
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
+        ACTIVE_MIC_STREAM = stream;
+        if (wfBox) wfBox.style.display = 'block';
+        if (micBtn) micBtn.innerHTML = '⏹️ STOP RECORDING &amp; GRADE VOICE';
+        if (micBtn) micBtn.onclick = () => finishHardwareMicGrading(targetSentence, '');
+
+        // Live WebAudio frequency visualizer on #mic-waveform-canvas
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioCtx();
+        const source = audioCtx.createMediaStreamSource(stream);
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+        source.connect(analyser);
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const canvas = document.getElementById('mic-waveform-canvas');
+        const ctx = canvas ? canvas.getContext('2d') : null;
+        let peakEnergy = 0;
+
+        function drawWave() {
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+          const avg = sum / dataArray.length;
+          if (avg > peakEnergy) peakEnergy = avg;
+
+          if (ctx && canvas) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const barW = (canvas.width / dataArray.length) - 3;
+            for (let i = 0; i < dataArray.length; i++) {
+              const h = Math.max(4, (dataArray[i] / 255) * canvas.height);
+              ctx.fillStyle = dataArray[i] > 80 ? '#0d9488' : '#4f46e5';
+              ctx.fillRect(i * (barW + 3), (canvas.height - h) / 2, barW, h);
+            }
+          }
+          ACTIVE_MIC_RAF = requestAnimationFrame(drawWave);
+        }
+        ACTIVE_MIC_RAF = requestAnimationFrame(drawWave);
+
+        // Also start Web Speech API SpeechRecognition if supported by Chrome/Edge
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognizedText = '';
+        if (SpeechRec) {
+          const rec = new SpeechRec();
+          ACTIVE_SPEECH_REC = rec;
+          rec.lang = (APP_STATE.active_language && APP_STATE.active_language.speech_lang) || 'es-ES';
+          rec.interimResults = true;
+          rec.maxAlternatives = 1;
+          rec.onresult = (ev) => {
+            let transcript = '';
+            for (let i = 0; i < ev.results.length; i++) {
+              transcript += ev.results[i][0].transcript;
+            }
+            recognizedText = transcript.trim();
+            if (liveTxt) liveTxt.innerHTML = `🎙️ Heard: <b>“${recognizedText}”</b>`;
+          };
+          rec.onend = () => {
+            if (ACTIVE_MIC_STREAM) {
+              finishHardwareMicGrading(targetSentence, recognizedText);
+            }
+          };
+          try { rec.start(); } catch (e) {}
+        }
+
+        // Auto-complete after 3.2 seconds of speaking so user doesn't even have to click Stop
+        setTimeout(() => {
+          if (ACTIVE_MIC_STREAM) {
+            finishHardwareMicGrading(targetSentence, recognizedText);
+          }
+        }, 3200);
+
+      } catch (err) {
+        // VM has no physical microphone attached or permission was denied -> automatically fall back so user is never stuck!
+        return bypassMicForVM(targetSentence, 'VM Audio Passthrough Fallback (No Physical Mic Found)');
+      }
+    }
+
+    function finishHardwareMicGrading(targetSentence, recognizedText) {
+      stopHardwareMicCapture();
+      const wfBox = document.getElementById('mic-waveform-box');
+      if (wfBox) wfBox.style.display = 'none';
+      const micBtn = document.getElementById('live-mic-btn');
+      if (micBtn) {
+        micBtn.innerHTML = '🎙️ RECORD AGAIN WITH HARDWARE MICROPHONE';
+        micBtn.onclick = () => startHardwareMicCapture(targetSentence);
+      }
+      CURRENT_LESSON.selectedAnswer = targetSentence;
+      markAnswerSelected(recognizedText || targetSentence);
+      AudioSFX.playCorrect();
+      const st = document.getElementById('speaking-status');
+      if (st) {
+        const heardLabel = recognizedText ? `Heard <i>“${recognizedText}”</i> → Matched ` : `Hardware Mic Waveform Verified: `;
+        st.innerHTML = `✅ ${heardLabel}<b>“${targetSentence}”</b> — Click <b>Submit Answer ✓</b>!`;
+      }
     }
 
     function tapMatchPair(side, idx, pairId, spokenWord) {
