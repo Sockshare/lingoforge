@@ -826,11 +826,15 @@ def build_lesson_exercises(lang_code: str, node_id: str) -> List[Dict[str, Any]]
     tokens_primary = _tokenize_sentence(s_nat, lang_code)
     tokens_secondary = _tokenize_sentence(s2_nat, lang_code)
 
-    distractor_pool = [
-        _tokenize_sentence(r_third[0], lang_code)[0],
-        _tokenize_sentence(r_fourth[0], lang_code)[0],
-        _tokenize_sentence(r_fifth[0], lang_code)[0],
+    raw_distractors = [
+        _tokenize_sentence(r_third[0], lang_code)[-1],
+        _tokenize_sentence(r_fourth[0], lang_code)[-1],
+        _tokenize_sentence(r_fifth[0], lang_code)[-1],
     ]
+    distractor_pool = []
+    for d_tok in raw_distractors:
+        if d_tok not in tokens_primary and d_tok not in distractor_pool:
+            distractor_pool.append(d_tok)
 
     # Build cloze sentence by blanking cloze_w (or first token if not substring)
     if cloze_w and cloze_w in s_nat:
