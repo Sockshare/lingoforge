@@ -8,13 +8,17 @@ from curriculum_data import LANGUAGES, build_course_units, build_lesson_exercise
 
 class TestLingoForgeEngine(unittest.TestCase):
     def test_languages_and_lifecycle(self):
-        self.assertEqual(len(LANGUAGES), 10)
+        self.assertEqual(len(LANGUAGES), 11)
+        self.assertIn("tl", LANGUAGES)
         with tempfile.TemporaryDirectory() as tmp:
             db = Path(tmp) / "test.db"
             eng = LingoForgeEngine(db_path=db)
             state = eng.get_full_state()
             self.assertEqual(state["active_language"]["code"], "es")
             self.assertEqual(len(state["units"]), 8)
+            res = eng.dispatch("SWITCH_LANGUAGE", {"lang_code": "tl"})
+            self.assertTrue(res.get("ok"))
+            self.assertEqual(eng.get_full_state()["active_language"]["code"], "tl")
             res = eng.dispatch("SWITCH_LANGUAGE", {"lang_code": "ja"})
             self.assertTrue(res.get("ok"))
             self.assertEqual(eng.get_full_state()["active_language"]["code"], "ja")

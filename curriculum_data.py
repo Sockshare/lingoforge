@@ -147,11 +147,77 @@ LANGUAGES: Dict[str, Dict[str, Any]] = {
         "script_name": "Arabic Script & Connected Forms",
         "tagline": "Read right-to-left connected script, root patterns, and warm Middle Eastern greetings.",
     },
+    "tl": {
+        "code": "tl",
+        "name": "Tagalog",
+        "native_name": "Wikang Tagalog (Filipino)",
+        "flag": "🇵🇭",
+        "learners": "9.8M",
+        "cefr_range": "A1 – C1 (8 Units • 40 Lessons)",
+        "voice_female": "fil-PH-BlessicaNeural",
+        "voice_male": "fil-PH-AngeloNeural",
+        "speech_lang": "fil-PH",
+        "accents": ["ng", "ñ", "á", "é", "í", "ó", "ú", "â", "ê", "î", "ô", "û"],
+        "script_name": "Abakada Digraphs (Ng) & Baybayin Heritage",
+        "tagline": "Speak authentic Filipino/Tagalog across Manila, master 'po/opo' respect markers, and understand focus affixes.",
+    },
 }
 
 
 # Core vocabulary & phrase packs for each language so every language has authentic, native exercises
 LANGUAGE_PACKS: Dict[str, Dict[str, Any]] = {
+    "tl": {
+        "vocab": [
+            {"id": "tl_kape", "word": "ang kape", "translation": "the coffee", "pos": "noun", "gender": "n/a", "roman": "ang ka-PE", "icon": "coffee", "unit": 1, "note": "'Ang' is the Tagalog focus/topic marker equivalent to 'the'."},
+            {"id": "tl_tubig", "word": "ang malamig na tubig", "translation": "the cold water", "pos": "noun", "gender": "n/a", "roman": "ang ma-la-MEEG na TOO-big", "icon": "water", "unit": 1, "note": "Linker 'na' connects the adjective 'malamig' (cold) to 'tubig' (water)."},
+            {"id": "tl_pandesal", "word": "ang mainit na pandesal", "translation": "the warm bread roll", "pos": "noun", "gender": "n/a", "roman": "ang ma-EE-nit na pan-de-SAL", "icon": "bread", "unit": 1, "note": "Pandesal is the classic Filipino morning bread roll."},
+            {"id": "tl_umaga", "word": "magandang umaga po", "translation": "good morning (polite)", "pos": "phrase", "gender": "n/a", "roman": "ma-gan-DANG oo-MA-ga po", "icon": "sun", "unit": 1, "note": "'Po' adds warm respect and politeness to any Tagalog sentence."},
+            {"id": "tl_estasyon", "word": "ang estasyon ng tren", "translation": "the train station", "pos": "noun", "gender": "n/a", "roman": "ang es-tas-YON nang tren", "icon": "train", "unit": 2, "note": "'Ng' (pronounced 'nang') marks possession ('of the')."},
+            {"id": "tl_tiket", "word": "dalawang tiket", "translation": "two tickets", "pos": "phrase", "gender": "n/a", "roman": "da-la-WANG TEE-ket", "icon": "ticket", "unit": 2, "note": "'Dalawa' (two) takes the '-ng' linker before a noun."},
+            {"id": "tl_pasaporte", "word": "ang pasaporte ko", "translation": "my passport", "pos": "noun", "gender": "n/a", "roman": "ang pa-sa-POR-te ko", "icon": "passport", "unit": 2, "note": "Post-nominal 'ko' means 'my'."},
+            {"id": "tl_bayad", "word": "ang bayad po", "translation": "the payment / bill (polite)", "pos": "phrase", "gender": "n/a", "roman": "ang BA-yad po", "icon": "receipt", "unit": 3, "note": "Used in restaurants and jeepneys when paying."},
+        ],
+        "sentences": [
+            {
+                "unit": 1,
+                "target": "Gusto ko po ng mainit na kape at pandesal.",
+                "english": "I would like hot coffee and pandesal bread, please.",
+                "tokens": ["Gusto", "ko", "po", "ng", "mainit", "na", "kape", "at", "pandesal."],
+                "distractors": ["saan", "tren", "kami", "bukas"],
+                "gloss": {"Gusto": "want/like", "ko": "I/by me", "po": "polite particle", "ng": "indefinite object marker", "mainit": "hot", "na": "adjective linker", "kape": "coffee", "at": "and", "pandesal.": "bread roll"},
+                "cloze_sentence": "___ ko po ng mainit na kape at pandesal.",
+                "cloze_answer": "Gusto",
+                "cloze_options": ["Gusto", "Saan", "Paano", "Kailan"],
+                "grammar_tip": "'Gusto ko po ng...' is the polite Tagalog structure for ordering or expressing what you would like.",
+                "dialogue_prompt": "Magandang umaga po! Ano po ang order ninyo?",
+                "dialogue_prompt_en": "Good morning! What would you like to order?",
+                "dialogue_options": [
+                    "Gusto ko po ng mainit na kape at pandesal.",
+                    "Nasaan po ang estasyon ng tren?",
+                    "Maraming salamat at paalam po!",
+                ],
+            },
+            {
+                "unit": 2,
+                "target": "Paumanhin po, nasaan ang estasyon ng tren?",
+                "english": "Excuse me, where is the train station?",
+                "tokens": ["Paumanhin", "po,", "nasaan", "ang", "estasyon", "ng", "tren?"],
+                "distractors": ["kape", "gusto", "ito", "masarap"],
+                "gloss": {"Paumanhin": "Excuse me", "po,": "polite marker", "nasaan": "where is", "ang": "the (topic marker)", "estasyon": "station", "ng": "of", "tren?": "train"},
+                "cloze_sentence": "Paumanhin po, ___ ang estasyon ng tren?",
+                "cloze_answer": "nasaan",
+                "cloze_options": ["nasaan", "sino", "kailan", "bakit"],
+                "grammar_tip": "Use 'Nasaan' before 'ang + noun' when asking for the location of a person, place, or object.",
+                "dialogue_prompt": "Pupunta kami sa Maynila ngayong umaga.",
+                "dialogue_prompt_en": "We are going to Manila this morning.",
+                "dialogue_options": [
+                    "Paumanhin po, nasaan ang estasyon ng tren?",
+                    "Masarap ang kape at keso.",
+                    "Magandang gabi po sa inyong lahat.",
+                ],
+            },
+        ],
+    },
     "es": {
         "vocab": [
             {"id": "es_cafe", "word": "el café", "translation": "the coffee", "pos": "noun (m)", "gender": "masculine", "roman": "el ka-FE", "icon": "coffee", "unit": 1, "note": "Masculine singular noun using 'el'."},
@@ -1165,6 +1231,14 @@ ALPHABET_DATA: Dict[str, List[Dict[str, Any]]] = {
         {"char": "ج", "romaji": "jīm (j)", "ipa": "/dʒ/", "type": "Arabic Letter", "example": "جبن (jubn - cheese)", "strokes": ["M 28 30 H 72 L 38 54 C 24 68, 42 86, 68 80", "M 52 66 L 54 68"]},
         {"char": "ش", "romaji": "shīn (sh)", "ipa": "/ʃ/", "type": "Arabic Letter", "example": "شاي (shāy - tea)", "strokes": ["M 78 48 V 64 H 62 V 48 V 64 H 46 V 48 V 64 C 46 80, 22 80, 22 58", "M 54 26 L 56 28", "M 48 34 L 50 36", "M 60 34 L 62 36"]},
         {"char": "م", "romaji": "mīm (m)", "ipa": "/m/", "type": "Arabic Letter", "example": "ماء (māʾ - water)", "strokes": ["M 56 44 C 70 44, 70 60, 56 60 C 42 60, 42 44, 56 44 H 32 V 84"]},
+    ],
+    "tl": [
+        {"char": "Ng", "romaji": "nga (Abakada Digraph)", "ipa": "/ŋ/", "type": "Tagalog Single Letter", "example": "ngayon (nga-YON - now/today)", "strokes": ["M 20 76 V 26 L 48 76 V 26", "M 78 46 C 56 38, 54 74, 78 68 V 86 C 76 94, 58 94, 54 86"]},
+        {"char": "Ñ", "romaji": "enye", "ipa": "/ɲ/", "type": "Filipino Alphabet", "example": "malacañang / niño", "strokes": ["M 26 80 V 30 L 74 80 V 30", "M 32 18 C 44 10, 56 26, 68 18"]},
+        {"char": "ᜀ", "romaji": "a (Baybayin)", "ipa": "/a/", "type": "Baybayin Vowel", "example": "ᜀᜇᜏ᜔ (araw - sun/day)", "strokes": ["M 24 38 C 42 20, 68 24, 66 48 C 64 68, 36 68, 36 82 H 78", "M 22 56 H 52"]},
+        {"char": "ᜃ", "romaji": "ka (Baybayin)", "ipa": "/ka/", "type": "Baybayin Syllable", "example": "ᜃᜉᜒ (kape - coffee)", "strokes": ["M 24 32 H 76", "M 24 68 H 76", "M 50 20 C 44 48, 56 56, 50 84"]},
+        {"char": "ᜋ", "romaji": "ma (Baybayin)", "ipa": "/ma/", "type": "Baybayin Syllable", "example": "ᜋᜄᜈ᜔ᜇ (maganda - beautiful)", "strokes": ["M 24 72 V 30 C 46 24, 76 36, 72 64 C 68 80, 40 76, 24 56"]},
+        {"char": "ᜑ", "romaji": "ha (Baybayin)", "ipa": "/ha/", "type": "Baybayin Syllable", "example": "ᜑᜉᜓᜈ᜔ (hapon - afternoon)", "strokes": ["M 24 58 C 36 24, 64 76, 78 40"]},
     ],
 }
 

@@ -785,6 +785,9 @@
     .lesson-overlay {
       position: fixed;
       inset: 0;
+      height: 100vh;
+      max-height: 100vh;
+      overflow: hidden;
       background: var(--bg-main);
       z-index: 100;
       display: none;
@@ -798,10 +801,11 @@
       max-width: 960px;
       width: 100%;
       margin: 0 auto;
-      padding: 24px 28px 12px;
+      padding: 18px 28px 10px;
       display: flex;
       align-items: center;
       gap: 18px;
+      flex-shrink: 0;
     }
     .close-lesson-btn {
       background: none;
@@ -823,14 +827,34 @@
     }
 
     .lesson-body {
-      max-width: 680px;
+      max-width: 720px;
       width: 100%;
       margin: 0 auto;
-      padding: 12px 24px;
+      padding: 12px 24px 20px;
       flex: 1;
+      min-height: 0;
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;
+    }
+    .inline-submit-bar {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1.5px dashed var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-submit-disabled {
+      opacity: 0.55;
+      filter: grayscale(0.25);
+    }
+    .btn-submit-ready {
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.22), 0 8px 20px rgba(79, 70, 229, 0.32) !important;
+      transform: translateY(-1px);
     }
     .ex-type-badge {
       display: inline-flex;
@@ -854,18 +878,18 @@
     .visual-cards-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
+      gap: 12px;
     }
     .visual-card {
       background: var(--bg-card);
       border: 2px solid var(--border-color);
       border-bottom: 4px solid var(--border-dark);
-      border-radius: 18px;
-      padding: 18px;
+      border-radius: 14px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
       cursor: pointer;
       transition: all 0.12s ease;
     }
@@ -1244,10 +1268,10 @@
         </button>
       </div>
 
-      <!-- 10-Language Switcher Popover -->
+      <!-- 11-Language Switcher Popover -->
       <div class="lang-dropdown-panel" id="lang-dropdown">
         <div style="font-size:12px; font-weight:900; text-transform:uppercase; color:var(--text-muted); letter-spacing:0.8px;">
-          Select Language Course (10 Courses)
+          Select Language Course (11 Courses)
         </div>
         <div class="lang-grid" id="lang-switcher-grid"></div>
       </div>
@@ -1432,18 +1456,18 @@
     // =========================================================================
     function getIllustrationSVG(iconName) {
       const icons = {
-        coffee: `<svg width="72" height="72" viewBox="0 0 80 80"><rect x="16" y="28" width="38" height="34" rx="10" fill="#4f46e5"/><path d="M54 34 H62 A8 8 0 0 1 62 50 H54" stroke="#3730a3" stroke-width="5" fill="none"/><rect x="12" y="62" width="46" height="6" rx="3" fill="#cbd5e1"/><path d="M28 14 Q32 20 28 24 M40 12 Q44 18 40 24" stroke="#ea580c" stroke-width="4" stroke-linecap="round" fill="none"/></svg>`,
-        water: `<svg width="72" height="72" viewBox="0 0 80 80"><path d="M40 12 C40 12 62 38 62 54 A22 22 0 1 1 18 54 C18 38 40 12 40 12 Z" fill="#0d9488"/><ellipse cx="32" cy="48" rx="5" ry="10" fill="#5eead4" transform="rotate(-15 32 48)"/></svg>`,
-        bread: `<svg width="72" height="72" viewBox="0 0 80 80"><path d="M14 48 C14 26 66 26 66 48 C66 58 14 58 14 48 Z" fill="#ea580c"/><path d="M28 34 L32 44 M40 32 L44 42 M52 34 L56 44" stroke="#fef3c7" stroke-width="4" stroke-linecap="round"/></svg>`,
-        milk: `<svg width="72" height="72" viewBox="0 0 80 80"><rect x="24" y="26" width="32" height="42" rx="6" fill="#ccfbf1" stroke="#0d9488" stroke-width="4"/><polygon points="24,26 40,14 56,26" fill="#0d9488"/><rect x="30" y="40" width="20" height="12" rx="3" fill="#0d9488"/></svg>`,
-        train: `<svg width="72" height="72" viewBox="0 0 80 80"><rect x="18" y="14" width="44" height="46" rx="12" fill="#4f46e5"/><rect x="24" y="22" width="32" height="16" rx="4" fill="#e0e7ff"/><circle cx="28" cy="50" r="5" fill="#d97706"/><circle cx="52" cy="50" r="5" fill="#d97706"/><path d="M22 68 L28 60 M58 68 L52 60" stroke="#64748b" stroke-width="5" stroke-linecap="round"/></svg>`,
-        ticket: `<svg width="72" height="72" viewBox="0 0 80 80"><rect x="12" y="24" width="56" height="32" rx="6" fill="#d97706" stroke="#b45309" stroke-width="3"/><line x1="48" y1="24" x2="48" y2="56" stroke="#b45309" stroke-width="3" stroke-dasharray="4 4"/></svg>`,
-        hotel: `<svg width="72" height="72" viewBox="0 0 80 80"><rect x="20" y="14" width="40" height="54" rx="4" fill="#0d9488"/><rect x="28" y="22" width="8" height="8" fill="#fff"/><rect x="44" y="22" width="8" height="8" fill="#fff"/><rect x="28" y="36" width="8" height="8" fill="#fff"/><rect x="44" y="36" width="8" height="8" fill="#fff"/><rect x="34" y="52" width="12" height="16" fill="#d97706"/></svg>`,
-        passport: `<svg width="72" height="72" viewBox="0 0 80 80"><rect x="20" y="12" width="40" height="56" rx="6" fill="#4f46e5"/><circle cx="40" cy="36" r="11" stroke="#d97706" stroke-width="3" fill="none"/><line x1="29" y1="36" x2="51" y2="36" stroke="#d97706" stroke-width="2"/><rect x="28" y="54" width="24" height="4" rx="2" fill="#d97706"/></svg>`,
-        apple: `<svg width="72" height="72" viewBox="0 0 80 80"><circle cx="40" cy="46" r="22" fill="#e11d48"/><path d="M40 24 Q48 12 54 18 Q48 26 40 24" fill="#0d9488"/></svg>`,
-        cheese: `<svg width="72" height="72" viewBox="0 0 80 80"><polygon points="14,56 66,56 54,24" fill="#d97706"/><circle cx="38" cy="46" r="5" fill="#b45309"/><circle cx="50" cy="48" r="4" fill="#b45309"/></svg>`,
-        receipt: `<svg width="72" height="72" viewBox="0 0 80 80"><rect x="22" y="14" width="36" height="52" rx="4" fill="#f1f5f9" stroke="#94a3b8" stroke-width="3"/><line x1="30" y1="28" x2="50" y2="28" stroke="#4f46e5" stroke-width="4"/><line x1="30" y1="40" x2="50" y2="40" stroke="#94a3b8" stroke-width="3"/><line x1="30" y1="50" x2="44" y2="50" stroke="#94a3b8" stroke-width="3"/></svg>`,
-        sun: `<svg width="72" height="72" viewBox="0 0 80 80"><circle cx="40" cy="40" r="18" fill="#d97706"/></svg>`
+        coffee: `<svg width="56" height="56" viewBox="0 0 80 80"><rect x="16" y="28" width="38" height="34" rx="10" fill="#4f46e5"/><path d="M54 34 H62 A8 8 0 0 1 62 50 H54" stroke="#3730a3" stroke-width="5" fill="none"/><rect x="12" y="62" width="46" height="6" rx="3" fill="#cbd5e1"/><path d="M28 14 Q32 20 28 24 M40 12 Q44 18 40 24" stroke="#ea580c" stroke-width="4" stroke-linecap="round" fill="none"/></svg>`,
+        water: `<svg width="56" height="56" viewBox="0 0 80 80"><path d="M40 12 C40 12 62 38 62 54 A22 22 0 1 1 18 54 C18 38 40 12 40 12 Z" fill="#0d9488"/><ellipse cx="32" cy="48" rx="5" ry="10" fill="#5eead4" transform="rotate(-15 32 48)"/></svg>`,
+        bread: `<svg width="56" height="56" viewBox="0 0 80 80"><path d="M14 48 C14 26 66 26 66 48 C66 58 14 58 14 48 Z" fill="#ea580c"/><path d="M28 34 L32 44 M40 32 L44 42 M52 34 L56 44" stroke="#fef3c7" stroke-width="4" stroke-linecap="round"/></svg>`,
+        milk: `<svg width="56" height="56" viewBox="0 0 80 80"><rect x="24" y="26" width="32" height="42" rx="6" fill="#ccfbf1" stroke="#0d9488" stroke-width="4"/><polygon points="24,26 40,14 56,26" fill="#0d9488"/><rect x="30" y="40" width="20" height="12" rx="3" fill="#0d9488"/></svg>`,
+        train: `<svg width="56" height="56" viewBox="0 0 80 80"><rect x="18" y="14" width="44" height="46" rx="12" fill="#4f46e5"/><rect x="24" y="22" width="32" height="16" rx="4" fill="#e0e7ff"/><circle cx="28" cy="50" r="5" fill="#d97706"/><circle cx="52" cy="50" r="5" fill="#d97706"/><path d="M22 68 L28 60 M58 68 L52 60" stroke="#64748b" stroke-width="5" stroke-linecap="round"/></svg>`,
+        ticket: `<svg width="56" height="56" viewBox="0 0 80 80"><rect x="12" y="24" width="56" height="32" rx="6" fill="#d97706" stroke="#b45309" stroke-width="3"/><line x1="48" y1="24" x2="48" y2="56" stroke="#b45309" stroke-width="3" stroke-dasharray="4 4"/></svg>`,
+        hotel: `<svg width="56" height="56" viewBox="0 0 80 80"><rect x="20" y="14" width="40" height="54" rx="4" fill="#0d9488"/><rect x="28" y="22" width="8" height="8" fill="#fff"/><rect x="44" y="22" width="8" height="8" fill="#fff"/><rect x="28" y="36" width="8" height="8" fill="#fff"/><rect x="44" y="36" width="8" height="8" fill="#fff"/><rect x="34" y="52" width="12" height="16" fill="#d97706"/></svg>`,
+        passport: `<svg width="56" height="56" viewBox="0 0 80 80"><rect x="20" y="12" width="40" height="56" rx="6" fill="#4f46e5"/><circle cx="40" cy="36" r="11" stroke="#d97706" stroke-width="3" fill="none"/><line x1="29" y1="36" x2="51" y2="36" stroke="#d97706" stroke-width="2"/><rect x="28" y="54" width="24" height="4" rx="2" fill="#d97706"/></svg>`,
+        apple: `<svg width="56" height="56" viewBox="0 0 80 80"><circle cx="40" cy="46" r="22" fill="#e11d48"/><path d="M40 24 Q48 12 54 18 Q48 26 40 24" fill="#0d9488"/></svg>`,
+        cheese: `<svg width="56" height="56" viewBox="0 0 80 80"><polygon points="14,56 66,56 54,24" fill="#d97706"/><circle cx="38" cy="46" r="5" fill="#b45309"/><circle cx="50" cy="48" r="4" fill="#b45309"/></svg>`,
+        receipt: `<svg width="56" height="56" viewBox="0 0 80 80"><rect x="22" y="14" width="36" height="52" rx="4" fill="#f1f5f9" stroke="#94a3b8" stroke-width="3"/><line x1="30" y1="28" x2="50" y2="28" stroke="#4f46e5" stroke-width="4"/><line x1="30" y1="40" x2="50" y2="40" stroke="#94a3b8" stroke-width="3"/><line x1="30" y1="50" x2="44" y2="50" stroke="#94a3b8" stroke-width="3"/></svg>`,
+        sun: `<svg width="56" height="56" viewBox="0 0 80 80"><circle cx="40" cy="40" r="18" fill="#d97706"/></svg>`
       };
       return icons[iconName] || icons.coffee;
     }
@@ -2431,6 +2455,42 @@
       }
     }
 
+    function getInlineSubmitBarHTML(initialReady = false, hintText = 'Select an option above, then click Submit Answer') {
+      const stateClass = initialReady ? 'btn-submit-ready' : 'btn-submit-disabled';
+      return `
+        <div class="inline-submit-bar" id="inline-submit-bar">
+          <span id="inline-submit-hint" style="font-size:13px; font-weight:800; color:var(--text-muted);">
+            ${initialReady ? '✅ Answer ready — click Submit Answer below!' : `💡 ${hintText}`}
+          </span>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <button class="btn-3d btn-outline" style="padding:10px 16px; font-size:13px;" onclick="skipExercise()">SKIP</button>
+            <button class="btn-3d btn-green ${stateClass}" id="inline-submit-btn" style="padding:12px 26px; font-size:15px;" onclick="submitCurrentExercise()">
+              SUBMIT ANSWER ✓
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function markAnswerSelected(selectedLabel = '') {
+      const inlineBtn = document.getElementById('inline-submit-btn');
+      const footerBtn = document.getElementById('lesson-check-btn');
+      const hintEl = document.getElementById('inline-submit-hint');
+      if (inlineBtn) {
+        inlineBtn.classList.remove('btn-submit-disabled');
+        inlineBtn.classList.add('btn-submit-ready');
+      }
+      if (footerBtn) {
+        footerBtn.classList.remove('btn-submit-disabled');
+        footerBtn.classList.add('btn-submit-ready');
+      }
+      if (hintEl) {
+        hintEl.innerHTML = selectedLabel
+          ? `✅ Selected: <b style="color:var(--duo-green);">${selectedLabel}</b> — Click <b>Submit Answer ✓</b>!`
+          : `✅ Answer ready — Click <b>Submit Answer ✓</b>!`;
+      }
+    }
+
     function renderCurrentExercise() {
       if (!CURRENT_LESSON) return;
       const { exercises, index, combo } = CURRENT_LESSON;
@@ -2438,6 +2498,7 @@
       // Reset footer state
       const footer = document.getElementById('lesson-footer');
       footer.className = 'lesson-footer';
+      footer.style.flexShrink = '0';
       document.getElementById('explain-my-answer-drawer').className = 'explain-drawer';
       document.getElementById('explain-my-answer-drawer').innerHTML = '';
 
@@ -2458,11 +2519,13 @@
       document.getElementById('lesson-hearts-display').textContent = APP_STATE.profile.unlimited_hearts ? '❤️ ∞' : `❤️ ${APP_STATE.profile.hearts}`;
 
       document.getElementById('lesson-footer-inner').innerHTML = `
-        <button class="btn-3d btn-outline" onclick="skipExercise()">SKIP</button>
-        <button class="btn-3d btn-green" id="lesson-check-btn" onclick="submitCurrentExercise()">CHECK</button>
+        <button class="btn-3d btn-outline" onclick="skipExercise()">SKIP QUESTION</button>
+        <div style="font-size:12px; font-weight:800; color:var(--text-muted);">Exercise ${index + 1} of ${exercises.length}</div>
+        <button class="btn-3d btn-green btn-submit-disabled" id="lesson-check-btn" onclick="submitCurrentExercise()">SUBMIT ANSWER ✓</button>
       `;
 
       const stage = document.getElementById('lesson-stage-mount');
+      stage.scrollTop = 0;
 
       if (ex.audio_text) {
         playNeuralTTS(ex.audio_text, false);
@@ -2482,6 +2545,7 @@
               </div>
             `).join('')}
           </div>
+          ${getInlineSubmitBarHTML(false, 'Tap one of the 4 illustrated cards above, then click Submit Answer')}
         `;
         return;
       }
@@ -2503,6 +2567,7 @@
               <button class="word-tile" id="wb-tile-${idx}" onclick="tapWordBankTile(${idx}, '${tok.replace(/'/g, "\\'")}')">${tok}</button>
             `).join('')}
           </div>
+          ${getInlineSubmitBarHTML(false, 'Tap the word tiles in order, then click Submit Answer')}
         `;
         return;
       }
@@ -2532,6 +2597,7 @@
               </button>
             `).join('')}
           </div>
+          ${getInlineSubmitBarHTML(false, 'Choose an option above, then click Submit Answer')}
         `;
         return;
       }
@@ -2553,6 +2619,7 @@
             🎙️ CLICK TO SPEAK / PRONUNCIATION CHECK
           </button>
           <div id="speaking-status" style="margin-top:12px; text-align:center; font-weight:900; color:var(--duo-green);"></div>
+          ${getInlineSubmitBarHTML(false, 'Click the microphone button above, then click Submit Answer')}
         `;
         return;
       }
@@ -2574,6 +2641,7 @@
               `).join('')}
             </div>
           </div>
+          ${getInlineSubmitBarHTML(false, 'Match the 5 vocabulary pairs above, then click Submit Answer')}
         `;
         return;
       }
@@ -2589,14 +2657,16 @@
           </div>
           <textarea id="free-type-input" rows="3" placeholder="Type in ${APP_STATE.active_language.name}..."
             style="width:100%; padding:14px; border-radius:16px; border:2px solid var(--border-dark); font-family:'Nunito',sans-serif; font-size:17px; font-weight:800; background:var(--bg-secondary); color:var(--text-main);"
-            oninput="CURRENT_LESSON.selectedAnswer = this.value">${ex.answer}</textarea>
+            oninput="CURRENT_LESSON.selectedAnswer = this.value; markAnswerSelected(this.value)">${ex.answer}</textarea>
           <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">
             ${accents.map(ch => `
               <button class="word-tile" style="padding:6px 12px; font-size:15px;" onclick="insertAccentChar('${ch}')">${ch}</button>
             `).join('')}
           </div>
+          ${getInlineSubmitBarHTML(true, '')}
         `;
         CURRENT_LESSON.selectedAnswer = ex.answer;
+        markAnswerSelected(ex.answer);
       }
     }
 
@@ -2605,6 +2675,7 @@
       const card = document.getElementById(`vcard-${idx}`);
       if (card) card.classList.add('selected');
       CURRENT_LESSON.selectedAnswer = word;
+      markAnswerSelected(word);
       playNeuralTTS(word, false);
     }
 
@@ -2614,6 +2685,7 @@
       tile.classList.add('used');
       CURRENT_LESSON.wordBankChosen.push({ idx, token });
       CURRENT_LESSON.selectedAnswer = CURRENT_LESSON.wordBankChosen.map(x => x.token).join(' ');
+      markAnswerSelected(CURRENT_LESSON.selectedAnswer);
       playNeuralTTS(token, false);
       renderWordBankTray();
     }
@@ -2625,6 +2697,7 @@
       if (origTile) origTile.classList.remove('used');
       CURRENT_LESSON.wordBankChosen.splice(chosenIndex, 1);
       CURRENT_LESSON.selectedAnswer = CURRENT_LESSON.wordBankChosen.map(x => x.token).join(' ');
+      if (CURRENT_LESSON.selectedAnswer) markAnswerSelected(CURRENT_LESSON.selectedAnswer);
       renderWordBankTray();
     }
 
@@ -2641,11 +2714,13 @@
       const card = document.getElementById(`opt-card-${idx}`);
       if (card) card.classList.add('selected');
       CURRENT_LESSON.selectedAnswer = val;
+      markAnswerSelected(val);
       playNeuralTTS(val, false);
     }
 
     function simulateSpeakingCapture(targetSentence) {
       CURRENT_LESSON.selectedAnswer = targetSentence;
+      markAnswerSelected(targetSentence);
       AudioSFX.playCorrect();
       const st = document.getElementById('speaking-status');
       if (st) st.textContent = `✅ Voice Waveform Matched: “${targetSentence}” (98% Native Cadence)`;
@@ -2669,6 +2744,7 @@
           CURRENT_LESSON.matchedLeft = null;
           if (CURRENT_LESSON.matchedCount >= 5) {
             CURRENT_LESSON.selectedAnswer = 'ALL_MATCHED';
+            markAnswerSelected('All 5 Pairs Matched');
           }
         } else {
           AudioSFX.playWrong();
@@ -2731,6 +2807,23 @@
       }
 
       document.getElementById('lesson-combo-pill').textContent = `🔥 ${CURRENT_LESSON.combo} IN A ROW`;
+
+      const inlineBar = document.getElementById('inline-submit-bar');
+      if (inlineBar) {
+        inlineBar.innerHTML = `
+          <span style="font-size:14px; font-weight:900; color:${result.correct ? 'var(--duo-green)' : 'var(--duo-red)'};">
+            ${result.correct ? '✅' : '❌'} ${result.feedback}
+          </span>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <button class="btn-3d btn-max" style="padding:10px 16px; font-size:13px;" onclick="triggerExplainMyAnswer('${userAns.replace(/'/g, "\\'")}')">
+              🧠 EXPLAIN MY ANSWER
+            </button>
+            <button class="btn-3d ${result.correct ? 'btn-green' : 'btn-red'}" style="padding:12px 26px; font-size:15px;" onclick="advanceToNextExercise()">
+              CONTINUE ➔
+            </button>
+          </div>
+        `;
+      }
 
       footerInner.innerHTML = `
         <div style="display:flex; align-items:center; gap:14px;">
