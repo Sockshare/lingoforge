@@ -2676,41 +2676,7 @@
         return;
       }
 
-      // 6. SPEAKING & PRONUNCIATION GRADER (Real Hardware Mic + VM/No-Mic Bypass)
-      if (ex.type === 'speaking') {
-        stage.innerHTML = `
-          <div class="ex-type-badge">🎙️ ${ex.badge}</div>
-          <div class="ex-prompt-title">${ex.prompt}</div>
-          <div style="padding:18px 20px; border:2px solid var(--border-color); border-radius:18px; margin-bottom:16px; display:flex; align-items:center; gap:16px; background:var(--bg-card);">
-            <button class="speaker-btn" onclick="playNeuralTTS('${ex.target_sentence.replace(/'/g, "\\'")}', false)">🔊</button>
-            <button class="speaker-btn slow-turtle" onclick="playNeuralTTS('${ex.target_sentence.replace(/'/g, "\\'")}', true)">🐢</button>
-            <div>
-              <div style="font-size:21px; font-weight:900;">“${ex.target_sentence}”</div>
-              <div style="font-size:14px; color:var(--text-muted); font-weight:700;">${ex.english_hint}</div>
-            </div>
-          </div>
-
-          <div style="display:grid; grid-template-columns: 1fr auto; gap:12px; align-items:stretch;">
-            <button class="btn-3d btn-blue" id="live-mic-btn" style="padding:16px 20px; font-size:15px; width:100%;" onclick="startHardwareMicCapture('${ex.target_sentence.replace(/'/g, "\\'")}')">
-              🎙️ RECORD WITH HARDWARE MICROPHONE
-            </button>
-            <button class="btn-3d btn-outline" style="padding:16px 18px; font-size:13px; white-space:nowrap;" onclick="bypassMicForVM('${ex.target_sentence.replace(/'/g, "\\'")}')">
-              🖥️ VM / NO MIC? SIMULATE VOICE
-            </button>
-          </div>
-
-          <div id="mic-waveform-box" style="display:none; margin-top:12px; padding:12px 16px; border-radius:14px; background:var(--bg-secondary); border:1.5px solid var(--duo-blue); text-align:center;">
-            <canvas id="mic-waveform-canvas" width="520" height="48" style="width:100%; height:48px; display:block;"></canvas>
-            <div id="mic-live-transcript" style="font-size:13px; font-weight:800; color:var(--duo-blue); margin-top:6px;">🎙️ Listening to your microphone... Speak the phrase aloud!</div>
-          </div>
-
-          <div id="speaking-status" style="margin-top:12px; text-align:center; font-weight:900; font-size:14px; color:var(--duo-green);"></div>
-          ${getInlineSubmitBarHTML(false, 'Click Record with Hardware Microphone (or VM Simulate Voice), then click Submit Answer')}
-        `;
-        return;
-      }
-
-      // 7. MATCH MADNESS (5x2 Pair Grid)
+      // 6. MATCH MADNESS (5x2 Pair Grid)
       if (ex.type === 'match_pairs') {
         stage.innerHTML = `
           <div class="ex-type-badge">⚡ ${ex.badge}</div>
@@ -2732,7 +2698,7 @@
         return;
       }
 
-      // 8. FREE-TYPE TRANSLATION WITH ACCENT BAR
+      // 7. FREE-TYPE TRANSLATION WITH ACCENT BAR
       if (ex.type === 'free_type') {
         const accents = APP_STATE.active_language.accents || [];
         stage.innerHTML = `
@@ -2776,12 +2742,12 @@
       renderWordBankTray();
     }
 
-    function untapWordBankTile(chosenIndex) {
-      const item = CURRENT_LESSON.wordBankChosen[chosenIndex];
+    function untapWordBankTile(chosenIdx) {
+      const item = CURRENT_LESSON.wordBankChosen[chosenIdx];
       if (!item) return;
-      const origTile = document.getElementById(`wb-tile-${item.idx}`);
-      if (origTile) origTile.classList.remove('used');
-      CURRENT_LESSON.wordBankChosen.splice(chosenIndex, 1);
+      const tile = document.getElementById(`wb-tile-${item.idx}`);
+      if (tile) tile.classList.remove('used');
+      CURRENT_LESSON.wordBankChosen.splice(chosenIdx, 1);
       CURRENT_LESSON.selectedAnswer = CURRENT_LESSON.wordBankChosen.map(x => x.token).join(' ');
       if (CURRENT_LESSON.selectedAnswer) markAnswerSelected(CURRENT_LESSON.selectedAnswer);
       renderWordBankTray();
@@ -2814,273 +2780,6 @@
       CURRENT_LESSON.selectedAnswer = val;
       markAnswerSelected(val);
       playNeuralTTS(val, false);
-    }
-
-    let ACTIVE_MIC_STREAM = null;
-    let ACTIVE_MIC_RAF = null;
-    let ACTIVE_SPEECH_REC = null;
-    let ACTIVE_MEDIA_RECORDER = null;
-    let ACTIVE_AUDIO_CHUNKS = [];
-    let ACTIVE_MIC_STOP_TIMER = null;
-
-    function stopHardwareMicCapture() {
-      if (ACTIVE_MIC_STOP_TIMER) {
-        clearTimeout(ACTIVE_MIC_STOP_TIMER);
-        ACTIVE_MIC_STOP_TIMER = null;
-      }
-      if (ACTIVE_MIC_RAF) {
-        cancelAnimationFrame(ACTIVE_MIC_RAF);
-        ACTIVE_MIC_RAF = null;
-      }
-      if (ACTIVE_SPEECH_REC) {
-        try { ACTIVE_SPEECH_REC.stop(); } catch (e) {}
-        ACTIVE_SPEECH_REC = null;
-      }
-      if (ACTIVE_MEDIA_RECORDER && ACTIVE_MEDIA_RECORDER.state !== 'inactive') {
-        try { ACTIVE_MEDIA_RECORDER.stop(); } catch (e) {}
-      }
-      ACTIVE_MEDIA_RECORDER = null;
-      if (ACTIVE_MIC_STREAM) {
-        ACTIVE_MIC_STREAM.getTracks().forEach(t => t.stop());
-        ACTIVE_MIC_STREAM = null;
-      }
-    }
-
-    function bypassMicForVM(targetSentence, reasonMsg = 'VM / No-Mic Simulation Mode') {
-      stopHardwareMicCapture();
-      const wfBox = document.getElementById('mic-waveform-box');
-      if (wfBox) wfBox.style.display = 'none';
-      CURRENT_LESSON.selectedAnswer = targetSentence;
-      markAnswerSelected(targetSentence);
-      AudioSFX.playCorrect();
-      const st = document.getElementById('speaking-status');
-      if (st) {
-        st.innerHTML = `✅ <b>${reasonMsg}:</b> Simulated <i>“${targetSentence}”</i> — Click <b>Submit Answer ✓</b>!`;
-      }
-    }
-
-    function simulateSpeakingCapture(targetSentence) {
-      return startHardwareMicCapture(targetSentence);
-    }
-
-    async function startHardwareMicCapture(targetSentence) {
-      stopHardwareMicCapture();
-      const st = document.getElementById('speaking-status');
-      const wfBox = document.getElementById('mic-waveform-box');
-      const liveTxt = document.getElementById('mic-live-transcript');
-      const micBtn = document.getElementById('live-mic-btn');
-      if (st) st.innerHTML = '';
-
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        if (st) {
-          st.innerHTML = `<span style="color:var(--duo-red);">⚠️ No microphone input device available in this browser. Use the <b>🖥️ VM / NO MIC? SIMULATE VOICE</b> button if you don't have a mic connected.</span>`;
-        }
-        return;
-      }
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-        });
-        ACTIVE_MIC_STREAM = stream;
-        ACTIVE_AUDIO_CHUNKS = [];
-
-        if (wfBox) wfBox.style.display = 'block';
-        if (liveTxt) liveTxt.innerHTML = `🔴 <b>Recording live audio...</b> Read aloud: <i>“${targetSentence}”</i> (then click Stop &amp; Verify)`;
-
-        let browserRecognizedText = '';
-
-        // 1. Start MediaRecorder to capture raw microphone audio for server-side STT (/api/speech_verify)
-        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-          ? 'audio/webm;codecs=opus'
-          : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
-        const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-        ACTIVE_MEDIA_RECORDER = recorder;
-
-        recorder.ondataavailable = (ev) => {
-          if (ev.data && ev.data.size > 0) ACTIVE_AUDIO_CHUNKS.push(ev.data);
-        };
-
-        recorder.onstop = async () => {
-          const audioBlob = new Blob(ACTIVE_AUDIO_CHUNKS, { type: recorder.mimeType || 'audio/webm' });
-          await verifyRecordedSpeechOnServer(targetSentence, audioBlob, browserRecognizedText);
-        };
-
-        recorder.start(200);
-
-        if (micBtn) {
-          micBtn.innerHTML = '⏹️ STOP RECORDING &amp; VERIFY PRONUNCIATION';
-          micBtn.onclick = () => {
-            if (ACTIVE_MEDIA_RECORDER && ACTIVE_MEDIA_RECORDER.state !== 'inactive') {
-              ACTIVE_MEDIA_RECORDER.stop();
-            }
-          };
-        }
-
-        // 2. Live WebAudio frequency visualizer on #mic-waveform-canvas
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioCtx();
-        const source = audioCtx.createMediaStreamSource(stream);
-        const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 64;
-        source.connect(analyser);
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        const canvas = document.getElementById('mic-waveform-canvas');
-        const ctx = canvas ? canvas.getContext('2d') : null;
-
-        function drawWave() {
-          analyser.getByteFrequencyData(dataArray);
-          if (ctx && canvas) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const barW = (canvas.width / dataArray.length) - 3;
-            for (let i = 0; i < dataArray.length; i++) {
-              const h = Math.max(4, (dataArray[i] / 255) * canvas.height);
-              ctx.fillStyle = dataArray[i] > 80 ? '#0d9488' : '#4f46e5';
-              ctx.fillRect(i * (barW + 3), (canvas.height - h) / 2, barW, h);
-            }
-          }
-          ACTIVE_MIC_RAF = requestAnimationFrame(drawWave);
-        }
-        ACTIVE_MIC_RAF = requestAnimationFrame(drawWave);
-
-        // 3. Also run browser SpeechRecognition for instant interim transcript preview if supported
-        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRec) {
-          const rec = new SpeechRec();
-          ACTIVE_SPEECH_REC = rec;
-          rec.lang = (APP_STATE.active_language && APP_STATE.active_language.speech_lang) || 'es-ES';
-          rec.interimResults = true;
-          rec.maxAlternatives = 1;
-          rec.onresult = (ev) => {
-            let transcript = '';
-            for (let i = 0; i < ev.results.length; i++) {
-              transcript += ev.results[i][0].transcript;
-            }
-            browserRecognizedText = transcript.trim();
-            if (liveTxt && browserRecognizedText) {
-              liveTxt.innerHTML = `🎙️ Live Preview: <b>“${browserRecognizedText}”</b>`;
-            }
-          };
-          try { rec.start(); } catch (e) {}
-        }
-
-        // Auto-stop after 4.5 seconds of recording
-        ACTIVE_MIC_STOP_TIMER = setTimeout(() => {
-          if (ACTIVE_MEDIA_RECORDER && ACTIVE_MEDIA_RECORDER.state !== 'inactive') {
-            ACTIVE_MEDIA_RECORDER.stop();
-          }
-        }, 4500);
-
-      } catch (err) {
-        if (st) {
-          st.innerHTML = `<span style="color:var(--duo-red);">⚠️ Could not access hardware microphone (${err.message || 'Permission or device error'}). Click <b>🖥️ VM / NO MIC? SIMULATE VOICE</b> to simulate.</span>`;
-        }
-      }
-    }
-
-    async function verifyRecordedSpeechOnServer(targetSentence, audioBlob, browserRecognizedText) {
-      stopHardwareMicCapture();
-      const wfBox = document.getElementById('mic-waveform-box');
-      const liveTxt = document.getElementById('mic-live-transcript');
-      const micBtn = document.getElementById('live-mic-btn');
-      const st = document.getElementById('speaking-status');
-
-      if (liveTxt) liveTxt.innerHTML = '⏳ Analyzing your spoken words and verifying pronunciation...';
-      if (micBtn) {
-        micBtn.innerHTML = '🎙️ RECORD AGAIN WITH HARDWARE MICROPHONE';
-        micBtn.onclick = () => startHardwareMicCapture(targetSentence);
-      }
-
-      const formData = new FormData();
-      formData.append('lang_code', (CURRENT_LESSON && CURRENT_LESSON.lang_code) || APP_STATE.profile.active_lang || 'es');
-      formData.append('target_sentence', targetSentence);
-      formData.append('browser_transcript', browserRecognizedText || '');
-      formData.append('audio', audioBlob, 'speech.webm');
-
-      try {
-        const res = await fetch('/api/speech_verify', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (wfBox) wfBox.style.display = 'none';
-
-        // Render word-by-word green/red pronunciation breakdown pills
-        const wordPills = (data.word_results || []).map(w => `
-          <span style="display:inline-block; padding:4px 10px; margin:2px; border-radius:8px; font-size:14px; font-weight:900;
-            background:${w.matched ? 'var(--duo-blue-bg)' : 'var(--duo-red-bg)'};
-            color:${w.matched ? 'var(--duo-blue)' : 'var(--duo-red)'};
-            border:1.5px solid ${w.matched ? 'var(--duo-blue)' : 'var(--duo-red)'};">
-            ${w.matched ? '✓' : '✗'} ${w.word}
-          </span>
-        `).join('');
-
-        // IMPORTANT: Store the ACTUAL transcribed words the user spoke (e.g. "Pickle"), NEVER overwrite with targetSentence!
-        CURRENT_LESSON.selectedAnswer = data.heard_text || '(unrecognized speech)';
-
-        if (data.passed) {
-          AudioSFX.playCorrect();
-          markAnswerSelected(`${data.heard_text} (${data.similarity_pct}% Match)`);
-          if (st) {
-            st.innerHTML = `
-              <div style="padding:12px 16px; border-radius:14px; background:var(--duo-blue-bg); border:2px solid var(--duo-blue); color:var(--text-main); text-align:left;">
-                <div style="font-weight:900; color:var(--duo-blue); font-size:15px;">✅ ${data.message}</div>
-                <div style="margin-top:8px;">${wordPills}</div>
-              </div>
-            `;
-          }
-        } else if (data.crd_mic_muted) {
-          AudioSFX.playWrong();
-          const escapedTarget = targetSentence.replace(/'/g, "\\'");
-          if (st) {
-            st.innerHTML = `
-              <div style="padding:14px 18px; border-radius:16px; background:var(--bg-secondary); border:2px solid var(--duo-gold); color:var(--text-main); text-align:left;">
-                <div style="font-weight:900; color:var(--duo-orange); font-size:15px;">
-                  🎙️ Chrome Remote Desktop Sent 0% Audio (${data.max_volume_db} dB Silence) from Your Device
-                </div>
-                <div style="font-size:13px; font-weight:700; color:var(--text-muted); margin-top:6px; line-height:1.45;">
-                  To speak with your hardware microphone on <b>Chromebook</b>, <b>Windows</b>, or <b>Mac</b>:
-                  <ul style="margin:6px 0 8px 18px; padding:0;">
-                    <li><b>Enable Remote Desktop Mic Passthrough (Chromebook / PC):</b> On your Chromebook, open <b>Settings ⚙️ → Apps → Manage your apps → Chrome Remote Desktop → Permissions → Turn ON Microphone</b> (or if using a browser tab, click the 🔒 icon next to <code>remotedesktop.google.com</code> → <b>Microphone: Allow</b>).</li>
-                    <li><b>OR Use Native OS Voice Dictation in the Box Below:</b>
-                      <br>• <b>Chromebook (ChromeOS):</b> Press <b>Search 🔍 + D</b> (or <b>Launcher ◯ + D</b>) and speak! (If prompted once, enable Dictation in <i>Settings → Accessibility → Keyboard and text input</i>).
-                      <br>• <b>Windows / Mac:</b> Press <b>Win + H</b> (Windows) or <b>Fn + Fn</b> (Mac).
-                    </li>
-                  </ul>
-                </div>
-                <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
-                  <input id="manual-speech-input" type="text" placeholder="Chromebook: Press Search+D | Windows: Win+H | Mac: Fn+Fn — then speak here..."
-                    style="flex:1; padding:10px 14px; border-radius:10px; border:2px solid var(--border-dark); font-family:'Nunito',sans-serif; font-size:14px; font-weight:800; background:var(--bg-card); color:var(--text-main);" />
-                  <button class="btn-3d btn-green" style="padding:10px 16px; font-size:13px;" onclick="verifyTypedTranscript('${escapedTarget}')">
-                    VERIFY SPOKEN WORDS
-                  </button>
-                </div>
-              </div>
-            `;
-          }
-        } else {
-          AudioSFX.playWrong();
-          const hintEl = document.getElementById('inline-submit-hint');
-          if (hintEl) {
-            hintEl.innerHTML = `❌ Heard: <b style="color:var(--duo-red);">“${data.heard_text}”</b> (${data.similarity_pct}% match) — Click <b>Record Again</b> to retry!`;
-          }
-          if (st) {
-            st.innerHTML = `
-              <div style="padding:12px 16px; border-radius:14px; background:var(--duo-red-bg); border:2px solid var(--duo-red); color:var(--text-main); text-align:left;">
-                <div style="font-weight:900; color:var(--duo-red); font-size:15px;">❌ ${data.message}</div>
-                <div style="margin-top:8px;">${wordPills}</div>
-              </div>
-            `;
-          }
-        }
-      } catch (err) {
-        if (wfBox) wfBox.style.display = 'none';
-        if (st) st.innerHTML = `<span style="color:var(--duo-red);">⚠️ Speech verification failed: ${err.message}</span>`;
-      }
-    }
-
-    async function verifyTypedTranscript(targetSentence) {
-      const inp = document.getElementById('manual-speech-input');
-      const spokenVal = inp ? inp.value.trim() : '';
-      const emptyBlob = new Blob([], { type: 'audio/webm' });
-      await verifyRecordedSpeechOnServer(targetSentence, emptyBlob, spokenVal);
     }
 
     function tapMatchPair(side, idx, pairId, spokenWord) {
@@ -3120,25 +2819,14 @@
 
     function skipExercise() {
       if (!CURRENT_LESSON) return;
-      stopHardwareMicCapture();
       CURRENT_LESSON.index++;
       renderCurrentExercise();
     }
 
     async function submitCurrentExercise() {
       if (!CURRENT_LESSON) return;
-      stopHardwareMicCapture();
       const ex = CURRENT_LESSON.exercises[CURRENT_LESSON.index];
       let userAns = CURRENT_LESSON.selectedAnswer;
-      // For speaking exercises, require an actual verified recording (or VM simulation) instead of auto-filling!
-      if (!userAns && ex.type === 'speaking') {
-        const st = document.getElementById('speaking-status');
-        if (st) {
-          st.innerHTML = `<div style="padding:10px 14px; border-radius:12px; background:var(--duo-red-bg); border:1.5px solid var(--duo-red); color:var(--duo-red); font-weight:900;">🎙️ Please record the sentence with your microphone first (or click "VM / No Mic? Simulate Voice") before submitting!</div>`;
-        }
-        AudioSFX.playWrong();
-        return;
-      }
       if (!userAns) {
         userAns = ex.answer;
       }

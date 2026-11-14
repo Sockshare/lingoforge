@@ -52,9 +52,10 @@ class TestLingoForgeEngine(unittest.TestCase):
             seen_sentences = set()
             for node in lesson_nodes:
                 exs = build_lesson_exercises(lang_code, node["id"])
-                self.assertEqual(len(exs), 8)
+                self.assertEqual(len(exs), 7)
+                self.assertNotIn("speaking", [e["type"] for e in exs])
                 seen_visual_answers.add(exs[0]["answer"])
-                seen_sentences.add(exs[7]["answer"])
+                seen_sentences.add(exs[6]["answer"])
             self.assertEqual(
                 len(seen_visual_answers),
                 40,

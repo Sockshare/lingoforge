@@ -940,20 +940,7 @@ def build_lesson_exercises(lang_code: str, node_id: str) -> List[Dict[str, Any]]
             "explanation": f"“{s_nat}” ({s_en}) is the natural response to “{dq}”.",
             "target_word_id": srs_word_id,
         },
-        # 6. Speaking & Pronunciation Grader
-        {
-            "id": f"{node_id}_ex6_speaking",
-            "type": "speaking",
-            "badge": f"LESSON {idx + 1} • SPEAKING LAB",
-            "prompt": "Speak this sentence out loud:",
-            "target_sentence": s_nat,
-            "english_hint": s_en,
-            "audio_text": s_nat,
-            "answer": s_nat,
-            "explanation": f"Pronunciation verified for “{s_nat}”. {tip}",
-            "target_word_id": srs_word_id,
-        },
-        # 7. Match Matrix (5x2 Pair Grid)
+        # 6. Match Matrix (5x2 Pair Grid)
         {
             "id": f"{node_id}_ex7_match",
             "type": "match_pairs",
