@@ -3033,17 +3033,20 @@
             st.innerHTML = `
               <div style="padding:14px 18px; border-radius:16px; background:var(--bg-secondary); border:2px solid var(--duo-gold); color:var(--text-main); text-align:left;">
                 <div style="font-weight:900; color:var(--duo-orange); font-size:15px;">
-                  🎙️ Chrome Remote Desktop Sent 0% Audio (${data.max_volume_db} dB Silence) from Your PC
+                  🎙️ Chrome Remote Desktop Sent 0% Audio (${data.max_volume_db} dB Silence) from Your Device
                 </div>
                 <div style="font-size:13px; font-weight:700; color:var(--text-muted); margin-top:6px; line-height:1.45;">
-                  To use your <b>physical PC's microphone</b> directly with zero SSH commands:
+                  To speak with your hardware microphone on <b>Chromebook</b>, <b>Windows</b>, or <b>Mac</b>:
                   <ul style="margin:6px 0 8px 18px; padding:0;">
-                    <li><b>Option 1 (Direct HTTPS on Your PC — Zero SSH):</b> Open <code style="color:var(--duo-green); font-weight:900;">https://julianmorrisette.c.googlers.com:8443</code> in your <b>physical PC's browser</b> (or enable <b>Microphone → Allow</b> via the 🔒 icon on your PC's <code>remotedesktop.google.com</code> tab). Anything you speak on your PC automatically syncs here!</li>
-                    <li><b>Option 2 (PC Voice Dictation Right Here):</b> Click the box below, press <b>Win+H</b> (Windows) or <b>Fn+Fn</b> (Mac) on your PC to dictate with your mic, and click <b>Verify Spoken Words</b>:</li>
+                    <li><b>Enable Remote Desktop Mic Passthrough (Chromebook / PC):</b> On your Chromebook, open <b>Settings ⚙️ → Apps → Manage your apps → Chrome Remote Desktop → Permissions → Turn ON Microphone</b> (or if using a browser tab, click the 🔒 icon next to <code>remotedesktop.google.com</code> → <b>Microphone: Allow</b>).</li>
+                    <li><b>OR Use Native OS Voice Dictation in the Box Below:</b>
+                      <br>• <b>Chromebook (ChromeOS):</b> Press <b>Search 🔍 + D</b> (or <b>Launcher ◯ + D</b>) and speak! (If prompted once, enable Dictation in <i>Settings → Accessibility → Keyboard and text input</i>).
+                      <br>• <b>Windows / Mac:</b> Press <b>Win + H</b> (Windows) or <b>Fn + Fn</b> (Mac).
+                    </li>
                   </ul>
                 </div>
                 <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
-                  <input id="manual-speech-input" type="text" placeholder="Press Win+H (or Fn+Fn) to dictate with your PC mic, or type what you said..."
+                  <input id="manual-speech-input" type="text" placeholder="Chromebook: Press Search+D | Windows: Win+H | Mac: Fn+Fn — then speak here..."
                     style="flex:1; padding:10px 14px; border-radius:10px; border:2px solid var(--border-dark); font-family:'Nunito',sans-serif; font-size:14px; font-weight:800; background:var(--bg-card); color:var(--text-main);" />
                   <button class="btn-3d btn-green" style="padding:10px 16px; font-size:13px;" onclick="verifyTypedTranscript('${escapedTarget}')">
                     VERIFY SPOKEN WORDS
