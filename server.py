@@ -136,6 +136,7 @@ def tts_endpoint():
 @app.route("/api/speech_verify", methods=["POST"])
 def speech_verify_endpoint():
     """Transcribes user microphone audio via ffmpeg + SpeechRecognition and verifies it against the target sentence."""
+    import re
     import subprocess
     import tempfile
 
@@ -149,6 +150,7 @@ def speech_verify_endpoint():
 
     transcribed_target = ""
     transcribed_en = ""
+    max_volume_db = -91.0
 
     if audio_file:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -156,7 +158,21 @@ def speech_verify_endpoint():
             wav_path = Path(tmpdir) / "converted.wav"
             audio_file.save(str(in_path))
 
-            # Convert browser WebM/Opus/WAV to 16kHz mono PCM WAV with volume normalization
+            # Measure peak volume (dB) of incoming audio stream
+            v_proc = subprocess.run(
+                ["ffmpeg", "-i", str(in_path), "-af", "volumedetect", "-f", "null", "/dev/null"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            m_vol = re.search(r"max_volume:\s*([-\d.]+)\s*dB", v_proc.stderr or "")
+            if m_vol:
+                try:
+                    max_volume_db = float(m_vol.group(1))
+                except ValueError:
+                    max_volume_db = -91.0
+
+            # Convert browser WebM/Opus/WAV to 16kHz mono PCM WAV with volume boost & silence trimming
             proc = subprocess.run(
                 [
                     "ffmpeg",
@@ -164,7 +180,7 @@ def speech_verify_endpoint():
                     "-i",
                     str(in_path),
                     "-af",
-                    "volume=1.8",
+                    "highpass=f=80,lowpass=f=7500,volume=2.4",
                     "-ar",
                     "16000",
                     "-ac",
@@ -174,7 +190,7 @@ def speech_verify_endpoint():
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            if proc.returncode == 0 and wav_path.exists() and wav_path.stat().st_size > 200:
+            if proc.returncode == 0 and wav_path.exists() and wav_path.stat().st_size > 200 and max_volume_db > -75.0:
                 import speech_recognition as sr
 
                 recognizer = sr.Recognizer()
@@ -195,6 +211,8 @@ def speech_verify_endpoint():
         transcribed_target=transcribed_target or browser_transcript,
         transcribed_en=transcribed_en,
     )
+    res["max_volume_db"] = max_volume_db
+    res["crd_mic_muted"] = bool(max_volume_db <= -80.0 and not (transcribed_target or transcribed_en or browser_transcript))
     return jsonify({"ok": True, **res})
 
 

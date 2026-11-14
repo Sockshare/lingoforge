@@ -3026,9 +3026,34 @@
               </div>
             `;
           }
+        } else if (data.crd_mic_muted) {
+          AudioSFX.playWrong();
+          const escapedTarget = targetSentence.replace(/'/g, "\\'");
+          if (st) {
+            st.innerHTML = `
+              <div style="padding:14px 18px; border-radius:16px; background:var(--bg-secondary); border:2px solid var(--duo-gold); color:var(--text-main); text-align:left;">
+                <div style="font-weight:900; color:var(--duo-orange); font-size:15px;">
+                  🎙️ Chrome Remote Desktop Received 0% Audio (${data.max_volume_db} dB Silence) from Your PC
+                </div>
+                <div style="font-size:13px; font-weight:700; color:var(--text-muted); margin-top:6px; line-height:1.45;">
+                  You allowed the microphone <b>inside the VM browser</b>, but the <b>Chrome Remote Desktop tab on your physical PC</b> is not yet forwarding your PC's mic into the VM:
+                  <ol style="margin:6px 0 8px 18px; padding:0;">
+                    <li>On your <b>physical PC's top browser bar</b> (on the <code>remotedesktop.google.com</code> tab), click the <b>🔒 Lock / Site Settings icon</b> next to the URL and set <b>Microphone → Allow</b>, then reload the Remote Desktop tab.</li>
+                    <li><b>OR</b> use your PC's OS Dictation (<b>Win+H</b> on Windows / <b>Fn+Fn</b> on Mac) or type what you say in the box below to verify it directly:</li>
+                  </ol>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
+                  <input id="manual-speech-input" type="text" placeholder="Use PC Dictation (Win+H) or type what you spoke here (try 'Pickle' vs '${escapedTarget}')..."
+                    style="flex:1; padding:10px 14px; border-radius:10px; border:2px solid var(--border-dark); font-family:'Nunito',sans-serif; font-size:14px; font-weight:800; background:var(--bg-card); color:var(--text-main);" />
+                  <button class="btn-3d btn-green" style="padding:10px 16px; font-size:13px;" onclick="verifyTypedTranscript('${escapedTarget}')">
+                    VERIFY SPOKEN WORDS
+                  </button>
+                </div>
+              </div>
+            `;
+          }
         } else {
           AudioSFX.playWrong();
-          // Keep Submit Answer marked with what was heard (or user can Record Again!)
           const hintEl = document.getElementById('inline-submit-hint');
           if (hintEl) {
             hintEl.innerHTML = `❌ Heard: <b style="color:var(--duo-red);">“${data.heard_text}”</b> (${data.similarity_pct}% match) — Click <b>Record Again</b> to retry!`;
@@ -3046,6 +3071,13 @@
         if (wfBox) wfBox.style.display = 'none';
         if (st) st.innerHTML = `<span style="color:var(--duo-red);">⚠️ Speech verification failed: ${err.message}</span>`;
       }
+    }
+
+    async function verifyTypedTranscript(targetSentence) {
+      const inp = document.getElementById('manual-speech-input');
+      const spokenVal = inp ? inp.value.trim() : '';
+      const emptyBlob = new Blob([], { type: 'audio/webm' });
+      await verifyRecordedSpeechOnServer(targetSentence, emptyBlob, spokenVal);
     }
 
     function tapMatchPair(side, idx, pairId, spokenWord) {
