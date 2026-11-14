@@ -213,11 +213,46 @@ def speech_verify_endpoint():
     )
     res["max_volume_db"] = max_volume_db
     res["crd_mic_muted"] = bool(max_volume_db <= -80.0 and not (transcribed_target or transcribed_en or browser_transcript))
+
+    # If a remote PC browser (on https://julianmorrisette.c.googlers.com:8443) just verified speech, store it so the VM browser syncs automatically!
+    if not res["crd_mic_muted"] and (transcribed_target or transcribed_en or browser_transcript):
+        import time as _t
+
+        app.config["LATEST_REMOTE_SPEECH"] = {
+            "ts": _t.time(),
+            "target_sentence": target_sentence,
+            "result": res,
+        }
+
     return jsonify({"ok": True, **res})
 
 
+@app.route("/api/speech_latest", methods=["GET"])
+def speech_latest_endpoint():
+    """Allows the VM browser to automatically pick up voice verifications recorded from the user's PC browser."""
+    latest = app.config.get("LATEST_REMOTE_SPEECH")
+    return jsonify({"ok": True, "latest": latest})
+
+
 if __name__ == "__main__":
+    import threading
+    from werkzeug.serving import make_server
+
     host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", 8103))
-    app.run(host=host, port=port, debug=False)
+    https_port = int(os.environ.get("HTTPS_PORT", 8443))
+
+    cert_file = BASE_DIR / "data" / "ssl" / "cert.pem"
+    key_file = BASE_DIR / "data" / "ssl" / "key.pem"
+    if cert_file.exists() and key_file.exists():
+        def _run_https():
+            try:
+                srv = make_server(host, https_port, app, ssl_context=(str(cert_file), str(key_file)), threaded=True)
+                srv.serve_forever()
+            except Exception:
+                pass
+
+        threading.Thread(target=_run_https, daemon=True).start()
+
+    app.run(host=host, port=port, debug=False, threaded=True)
 
