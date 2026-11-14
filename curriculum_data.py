@@ -1,7 +1,7 @@
 """
-LingoForge // Duolingo & Duolingo Max Curriculum, Stories, Roleplay & Alphabet Data
+LingoForge // Polyglot Studio & Forge AI Curriculum, Stories, Roleplay & Alphabet Data
 Supports 10 languages with CEFR-aligned Units, Guidebooks, 8 Exercise Mechanics,
-Interactive Voiced Stories, Duolingo Max AI Roleplay Scenarios, and Character Trainers.
+Interactive Voiced Stories, Forge AI Roleplay Scenarios, and Character Trainers.
 """
 
 from typing import Dict, Any, List
@@ -638,11 +638,11 @@ def build_course_units(lang_code: str) -> List[Dict[str, Any]]:
         {
             "unit_number": 1,
             "id": f"{lang_code}_unit_1",
-            "section": "Section 1: CEFR A1 Rookie",
+            "section": "Section 1: CEFR A1 Apprentice",
             "title": "Unit 1: Order in a Café & Polite Greetings",
             "subtitle": f"Introduce yourself, order drinks & pastries, and use polite {lang['name']} requests.",
-            "color": "#58cc02",
-            "border_color": "#46a302",
+            "color": "#4f46e5",
+            "border_color": "#3730a3",
             "guidebook": {
                 "title": f"Unit 1 Guidebook: Café & Greetings ({lang['name']})",
                 "summary": f"Master foundational {lang['name']} nouns, gender/articles, and polite ordering verbs.",
@@ -691,8 +691,8 @@ def build_course_units(lang_code: str) -> List[Dict[str, Any]]:
                     "id": f"{lang_code}_u1_roleplay",
                     "type": "roleplay",
                     "scenario_id": f"{lang_code}_rp_cafe",
-                    "title": "MAX Roleplay: The Artisanal Barista",
-                    "subtitle": "Duolingo Max Live AI Conversation",
+                    "title": "Forge AI Roleplay: The Artisanal Barista",
+                    "subtitle": "Forge AI Live Conversation",
                     "icon": "max",
                     "offset_x": -40,
                     "max_crowns": 1,
@@ -702,7 +702,7 @@ def build_course_units(lang_code: str) -> List[Dict[str, Any]]:
                     "id": f"{lang_code}_u1_practice",
                     "type": "practice",
                     "title": "Personalized SRS Practice",
-                    "subtitle": "Strengthen Weak Words & Refill Heart",
+                    "subtitle": "Strengthen Weak Words & Refill Spark",
                     "icon": "dumbbell",
                     "offset_x": 38,
                     "max_crowns": 3,
@@ -711,7 +711,7 @@ def build_course_units(lang_code: str) -> List[Dict[str, Any]]:
                 {
                     "id": f"{lang_code}_u1_trophy",
                     "type": "trophy",
-                    "title": "Unit 1 Legendary Review",
+                    "title": "Unit 1 Masterwork Review",
                     "subtitle": "Complete all 8 exercise mechanics",
                     "icon": "trophy",
                     "offset_x": 0,
@@ -723,11 +723,11 @@ def build_course_units(lang_code: str) -> List[Dict[str, Any]]:
         {
             "unit_number": 2,
             "id": f"{lang_code}_unit_2",
-            "section": "Section 1: CEFR A1 Explorer",
+            "section": "Section 1: CEFR A1 Wayfinder",
             "title": "Unit 2: Navigate Trains, Hotels & Directions",
             "subtitle": f"Ask where stations are, buy rail tickets, and check into hotels in {lang['name']}.",
-            "color": "#1cb0f6",
-            "border_color": "#1899d6",
+            "color": "#0d9488",
+            "border_color": "#0f766e",
             "guidebook": {
                 "title": f"Unit 2 Guidebook: Transit & Directions ({lang['name']})",
                 "summary": "Ask for locations politely, purchase transit tickets, and handle travel checkpoints.",
@@ -753,8 +753,8 @@ def build_course_units(lang_code: str) -> List[Dict[str, Any]]:
                     "id": f"{lang_code}_u2_roleplay",
                     "type": "roleplay",
                     "scenario_id": f"{lang_code}_rp_station",
-                    "title": "MAX Roleplay: Express Train Counter",
-                    "subtitle": "Duolingo Max Live AI Conversation",
+                    "title": "Forge AI Roleplay: Express Train Counter",
+                    "subtitle": "Forge AI Live Conversation",
                     "icon": "max",
                     "offset_x": 76,
                     "max_crowns": 1,
@@ -774,7 +774,7 @@ def build_course_units(lang_code: str) -> List[Dict[str, Any]]:
                 {
                     "id": f"{lang_code}_u2_trophy",
                     "type": "trophy",
-                    "title": "Unit 2 Legendary Trophy",
+                    "title": "Unit 2 Masterwork Trophy",
                     "subtitle": "Master Transit & Directions",
                     "icon": "trophy",
                     "offset_x": 0,
@@ -786,11 +786,11 @@ def build_course_units(lang_code: str) -> List[Dict[str, Any]]:
         {
             "unit_number": 3,
             "id": f"{lang_code}_unit_3",
-            "section": "Section 2: CEFR A2 Traveler",
+            "section": "Section 2: CEFR A2 Artisan",
             "title": "Unit 3: Dining Out, Markets & Compliments",
             "subtitle": "Request the check, compliment the chef, and shop for fresh ingredients.",
-            "color": "#ce82ff",
-            "border_color": "#a55eea",
+            "color": "#ea580c",
+            "border_color": "#c2410c",
             "guidebook": {
                 "title": f"Unit 3 Guidebook: Dining & Market ({lang['name']})",
                 "summary": "Express past satisfaction, ask for the bill, and pair adjectives with nouns.",
@@ -814,7 +814,7 @@ def build_course_units(lang_code: str) -> List[Dict[str, Any]]:
                 {
                     "id": f"{lang_code}_u3_trophy",
                     "type": "trophy",
-                    "title": "Unit 3 Legendary Trophy",
+                    "title": "Unit 3 Masterwork Trophy",
                     "subtitle": "CEFR A2 Milestone Challenge",
                     "icon": "trophy",
                     "offset_x": 0,
@@ -828,7 +828,7 @@ def build_course_units(lang_code: str) -> List[Dict[str, Any]]:
 
 def build_lesson_exercises(lang_code: str, node_id: str) -> List[Dict[str, Any]]:
     """
-    Generates a full 8-exercise interactive Duolingo lesson covering all 8 signature mechanics:
+    Generates a full 8-exercise interactive LingoForge lesson covering all 8 signature mechanics:
     1. visual_select (2x2 SVG Illustrated Flashcards)
     2. word_bank (Tap-tile sentence builder with hover dictionary tooltips)
     3. listening (Tap what you hear with 1.0x + 0.65x Slow Turtle button)
@@ -990,7 +990,7 @@ def build_lesson_exercises(lang_code: str, node_id: str) -> List[Dict[str, Any]]
 
 
 def build_stories(lang_code: str) -> List[Dict[str, Any]]:
-    """Returns Interactive Voiced Duolingo Stories for the active language."""
+    """Returns Interactive Voiced LingoForge Stories for the active language."""
     lang = LANGUAGES.get(lang_code, LANGUAGES["es"])
     pack = LANGUAGE_PACKS.get(lang_code, LANGUAGE_PACKS["es"])
     s0 = pack["sentences"][0]
@@ -1006,9 +1006,9 @@ def build_stories(lang_code: str) -> List[Dict[str, Any]]:
                 "xp_reward": 30,
                 "gems_reward": 15,
                 "cover_icon": "coffee",
-                "cover_color": "#ff9600",
+                "cover_color": "#ea580c",
                 "lines": [
-                    {"speaker": "Narrator", "avatar": "🦉", "text": "Lucía entra en una cafetería muy ocupada en Madrid.", "en": "Lucía walks into a very busy café in Madrid."},
+                    {"speaker": "Narrator", "avatar": "🦊", "text": "Lucía entra en una cafetería muy ocupada en Madrid.", "en": "Lucía walks into a very busy café in Madrid."},
                     {"speaker": "Camarero", "avatar": "👨‍🍳", "text": "¡Buenos días! ¿Qué desea tomar hoy?", "en": "Good morning! What would you like to drink today?"},
                     {
                         "speaker": "Lucía",
@@ -1044,9 +1044,9 @@ def build_stories(lang_code: str) -> List[Dict[str, Any]]:
                 "xp_reward": 35,
                 "gems_reward": 20,
                 "cover_icon": "passport",
-                "cover_color": "#1cb0f6",
+                "cover_color": "#0d9488",
                 "lines": [
-                    {"speaker": "Narrator", "avatar": "🦉", "text": "Mateo y Sofía están en la estación de tren.", "en": "Mateo and Sofía are at the train station."},
+                    {"speaker": "Narrator", "avatar": "🦊", "text": "Mateo y Sofía están en la estación de tren.", "en": "Mateo and Sofía are at the train station."},
                     {"speaker": "Mateo", "avatar": "🧔🏻", "text": "Sofía, nuestro tren sale en cinco minutos. ¿Dónde está mi pasaporte?", "en": "Sofía, our train leaves in five minutes. Where is my passport?"},
                     {
                         "speaker": "Sofía",
@@ -1085,7 +1085,7 @@ def build_stories(lang_code: str) -> List[Dict[str, Any]]:
             "xp_reward": 30,
             "gems_reward": 15,
             "cover_icon": "coffee",
-            "cover_color": "#ff9600",
+            "cover_color": "#ea580c",
             "lines": [
                 {"speaker": "Barista", "avatar": "👨‍🍳", "text": s0["dialogue_prompt"], "en": s0["dialogue_prompt_en"]},
                 {
@@ -1120,7 +1120,7 @@ def build_stories(lang_code: str) -> List[Dict[str, Any]]:
             "xp_reward": 35,
             "gems_reward": 20,
             "cover_icon": "train",
-            "cover_color": "#1cb0f6",
+            "cover_color": "#0d9488",
             "lines": [
                 {"speaker": "Companion", "avatar": "👩🏻", "text": s1["dialogue_prompt"], "en": s1["dialogue_prompt_en"]},
                 {
@@ -1140,7 +1140,7 @@ def build_stories(lang_code: str) -> List[Dict[str, Any]]:
 
 
 def build_roleplay_scenarios(lang_code: str) -> List[Dict[str, Any]]:
-    """Returns Duolingo Max AI Roleplay Scenarios for the active language."""
+    """Returns Forge AI Roleplay Scenarios for the active language."""
     lang = LANGUAGES.get(lang_code, LANGUAGES["es"])
     pack = LANGUAGE_PACKS.get(lang_code, LANGUAGE_PACKS["es"])
     s0 = pack["sentences"][0]
@@ -1291,11 +1291,11 @@ SHOP_ITEMS: List[Dict[str, Any]] = [
         "category": "Boosts",
     },
     {
-        "id": "duolingo_max_pass",
-        "name": "Duolingo Max Pass (Unlimited Hearts + AI)",
-        "description": "Unlock Unlimited ∞ Hearts, Explain My Answer AI, and Live AI Roleplay Missions.",
+        "id": "forge_ai_pass",
+        "name": "Forge AI Studio Pass (Unlimited Hearts + AI)",
+        "description": "Unlock Unlimited ∞ Hearts, Explain My Answer AI, and Live Forge AI Roleplay Missions.",
         "cost": 500,
         "icon": "👑",
-        "category": "Duolingo Max",
+        "category": "Forge AI Studio",
     },
 ]

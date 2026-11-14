@@ -1,8 +1,6 @@
-# LingoForge — Gamified 10-Language Learning & AI Roleplay Studio
+# LingoForge — Polyglot Language Atelier & Forge AI Roleplay Studio
 
-> **Disclaimer:** LingoForge is an independent, unofficial educational software project inspired by gamified language-learning applications. It is **not affiliated with, endorsed by, or sponsored by Duolingo, Inc.** All curriculum data, stories, and UI code in this repository are original implementations.
-
-LingoForge is a self-hosted language-learning web application and CLI built with Flask, SQLite, Half-Life Regression spaced repetition (SRS), Levenshtein typo-tolerant answer grading, neural text-to-speech (`edge-tts` with Web Speech API fallback), and AI tutoring/roleplay (`google-genai` with deterministic offline fallbacks).
+LingoForge is an independent, self-hosted language-learning web application and CLI featuring **Kitsu** (the origami fox & forge-lantern companion), built with Flask, SQLite, Half-Life Regression spaced repetition (SRS), Levenshtein typo-tolerant answer grading, neural text-to-speech (`edge-tts` with Web Speech API fallback), and **Forge AI Studio** tutoring/roleplay (`google-genai` with deterministic offline fallbacks).
 
 ![LingoForge Skill Tree & Dashboard](docs/screenshot.png)
 

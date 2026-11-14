@@ -1,5 +1,5 @@
 """
-LingoForge // Core Gamification, Half-Life Regression SRS, Levenshtein Grader & Duolingo Max AI Engine
+LingoForge // Core Gamification, Half-Life Regression SRS, Levenshtein Grader & Forge AI Engine
 """
 
 import json
@@ -97,7 +97,7 @@ class LingoForgeEngine:
                 CREATE TABLE IF NOT EXISTS user_profile (
                     id INTEGER PRIMARY KEY CHECK (id = 1),
                     username TEXT DEFAULT 'Morrisette',
-                    avatar TEXT DEFAULT '🦉',
+                    avatar TEXT DEFAULT '🦊',
                     active_lang TEXT DEFAULT 'es',
                     xp INTEGER DEFAULT 1420,
                     daily_xp INTEGER DEFAULT 35,
@@ -109,7 +109,7 @@ class LingoForgeEngine:
                     unlimited_hearts INTEGER DEFAULT 1,
                     xp_boost_active INTEGER DEFAULT 0,
                     streak_freezes INTEGER DEFAULT 2,
-                    league_name TEXT DEFAULT 'Diamond League',
+                    league_name TEXT DEFAULT 'Obsidian Forge League',
                     lessons_completed INTEGER DEFAULT 18
                 )
                 """
@@ -164,7 +164,7 @@ class LingoForgeEngine:
                 """
             )
 
-            row = conn.execute("SELECT id FROM user_profile WHERE id = 1").fetchone()
+            row = conn.execute("SELECT id, avatar, league_name FROM user_profile WHERE id = 1").fetchone()
             if not row:
                 conn.execute("INSERT INTO user_profile (id) VALUES (1)")
                 # Seed initial node progress for Spanish Unit 1 so tree looks alive
@@ -176,6 +176,11 @@ class LingoForgeEngine:
                     "INSERT OR IGNORE INTO node_progress (node_id, lang_code, crowns, completed) VALUES (?, ?, ?, ?)",
                     ("es_u1_n2", "es", 2, 1),
                 )
+            else:
+                if row["avatar"] == "🦉":
+                    conn.execute("UPDATE user_profile SET avatar = '🦊' WHERE id = 1")
+                if row["league_name"] == "Diamond League":
+                    conn.execute("UPDATE user_profile SET league_name = 'Obsidian Forge League' WHERE id = 1")
 
             # Seed SRS vocabulary for all languages
             now = time.time()
@@ -320,7 +325,7 @@ class LingoForgeEngine:
                 },
                 {
                     "id": "quest_max_ai",
-                    "title": "Use Duolingo Max AI (Roleplay or Explain My Answer)",
+                    "title": "Use Forge AI Tutor (Roleplay or Explain My Answer)",
                     "current": 1 if prof["xp"] > 1420 else 0,
                     "target": 1,
                     "reward_gems": 40,
@@ -329,9 +334,9 @@ class LingoForgeEngine:
                 },
             ]
 
-            # Weekly Diamond League Leaderboard (12 learners)
+            # Weekly Obsidian Forge League Leaderboard (10 learners)
             leaderboard = [
-                {"name": "Sofia_Madrid", "avatar": "🦊", "xp": 1890, "country": "🇪🇸", "is_user": False},
+                {"name": "Sofia_Madrid", "avatar": "🦚", "xp": 1890, "country": "🇪🇸", "is_user": False},
                 {"name": "Kenji_Tokyo", "avatar": "🐼", "xp": 1720, "country": "🇯🇵", "is_user": False},
                 {"name": "Chloe_Paris", "avatar": "🦋", "xp": 1580, "country": "🇫🇷", "is_user": False},
                 {"name": prof["username"] + " (You)", "avatar": prof["avatar"], "xp": prof["xp"], "country": LANGUAGES[lang_code]["flag"], "is_user": True},
@@ -383,7 +388,7 @@ class LingoForgeEngine:
             return {
                 "correct": True,
                 "status": "exact",
-                "feedback": "Match Madness cleared! +Combo bonus!",
+                "feedback": "Match Matrix cleared! +Combo bonus!",
                 "correct_answer": expected,
                 "explanation": exercise.get("explanation", ""),
             }
@@ -400,7 +405,7 @@ class LingoForgeEngine:
                 return {
                     "correct": True,
                     "status": "exact",
-                    "feedback": "Awesome! Spot on!",
+                    "feedback": "Forged to perfection! Spot on!",
                     "correct_answer": expected,
                     "explanation": exercise.get("explanation", ""),
                 }
@@ -632,7 +637,7 @@ class LingoForgeEngine:
                     conn.execute("UPDATE user_profile SET gems = ?, streak_freezes = MIN(2, streak_freezes + 1) WHERE id = 1", (new_gems,))
                 elif item_id == "xp_boost_15m":
                     conn.execute("UPDATE user_profile SET gems = ?, xp_boost_active = 1 WHERE id = 1", (new_gems,))
-                elif item_id == "duolingo_max_pass":
+                elif item_id in ("forge_ai_pass", "duolingo_max_pass"):
                     conn.execute("UPDATE user_profile SET gems = ?, unlimited_hearts = 1, hearts = max_hearts WHERE id = 1", (new_gems,))
                 conn.commit()
             return {"ok": True, "item": item, "state": self.get_full_state()}
@@ -651,7 +656,7 @@ class LingoForgeEngine:
         return {"ok": False, "error": f"Unknown action: {action}"}
 
     # ------------------------------------------------------------------
-    # Duolingo Max AI Features (Powered by Gemini + Deterministic Fallback)
+    # Forge AI Studio Features (Powered by Gemini + Deterministic Fallback)
     # ------------------------------------------------------------------
     def explain_my_answer(
         self,
@@ -669,7 +674,7 @@ class LingoForgeEngine:
 
                 client = genai.Client(api_key=self.api_key)
                 sys_prompt = (
-                    f"You are Duo (Duolingo Max 'Explain My Answer' AI Tutor) for {lang['name']}. "
+                    f"You are Kitsu (LingoForge 'Explain My Answer' AI Tutor) for {lang['name']}. "
                     f"Return a concise JSON object with keys: "
                     f"headline (string), grammar_rule (string), word_breakdown (array of {{token, meaning, role}}), pro_tip (string). "
                     f"Exercise prompt: {prompt}\nLearner answered: {user_answer}\nCorrect solution: {correct_answer}\nContext: {base_explanation}"
@@ -681,7 +686,7 @@ class LingoForgeEngine:
                 )
                 if resp and resp.text:
                     parsed = json.loads(resp.text)
-                    parsed["source"] = "Duolingo Max Gemini AI"
+                    parsed["source"] = "LingoForge Gemini AI"
                     return parsed
             except Exception:
                 pass
@@ -705,7 +710,7 @@ class LingoForgeEngine:
 
         is_match = _normalize_text(user_answer, True) == _normalize_text(correct_answer, True)
         return {
-            "source": "Duolingo Max AI Linguistic Engine",
+            "source": "Forge AI Linguistic Engine",
             "headline": (
                 f"Why “{correct_answer}” works in {lang['name']}"
                 if is_match
@@ -739,7 +744,7 @@ class LingoForgeEngine:
 
                 client = genai.Client(api_key=self.api_key)
                 prompt = (
-                    f"You are playing the role of {scenario['npc_name']} in a Duolingo Max AI Roleplay for a learner studying {lang['name']}. "
+                    f"You are playing the role of {scenario['npc_name']} in a LingoForge AI Roleplay for a learner studying {lang['name']}. "
                     f"Scenario: {scenario['title']} ({scenario['objective']}). "
                     f"Learner said: {user_message}\n"
                     f"Respond with JSON: {{'npc_reply': '<natural reply in {lang['name']}>', 'npc_reply_en': '<English translation>', "
@@ -832,11 +837,11 @@ class LingoForgeEngine:
         new_unit = {
             "unit_number": 4,
             "id": unit_id,
-            "section": "Duolingo Max Custom AI Curriculum",
+            "section": "Forge AI Custom Curriculum",
             "title": f"AI Custom Unit: {clean_topic}",
             "subtitle": f"Personalized {lang['name']} vocabulary, listening & roleplay generated for “{clean_topic}”.",
-            "color": "#ff9600",
-            "border_color": "#cc7800",
+            "color": "#ea580c",
+            "border_color": "#c2410c",
             "guidebook": {
                 "title": f"AI Guidebook: {clean_topic} ({lang['name']})",
                 "summary": f"Custom-tailored {lang['name']} expressions and cultural tips for {clean_topic}.",
@@ -861,7 +866,7 @@ class LingoForgeEngine:
                     "id": f"{unit_id}_roleplay",
                     "type": "roleplay",
                     "scenario_id": f"{lang_code}_rp_cafe",
-                    "title": f"MAX Roleplay: {clean_topic[:16]}",
+                    "title": f"Forge AI Roleplay: {clean_topic[:16]}",
                     "subtitle": "Live AI Conversation Mission",
                     "icon": "max",
                     "offset_x": 35,

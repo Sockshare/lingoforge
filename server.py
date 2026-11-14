@@ -1,6 +1,6 @@
 """
-LingoForge // Standalone Duolingo & Duolingo Max Flask Server (Port 8103)
-Provides REST APIs, SQLite state persistence, Duolingo Max AI endpoints, and Neural Edge-TTS Audio.
+LingoForge // Standalone Polyglot & Forge AI Studio Flask Server (Port 8103)
+Provides REST APIs, SQLite state persistence, Forge AI Studio endpoints, and Neural Edge-TTS Audio.
 """
 
 import asyncio
@@ -31,7 +31,7 @@ def index():
 
 @app.route("/api/health")
 def health():
-    return jsonify({"status": "ok", "app": "LingoForge // Duolingo & Duolingo Max", "port": 8103})
+    return jsonify({"status": "ok", "app": "LingoForge // Polyglot & Forge AI Studio", "port": 8103})
 
 
 @app.route("/api/state", methods=["GET"])

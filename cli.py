@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 LingoForge // 1:1 CLI Parity Tool
-Allows inspecting state, switching languages, grading answers, running Duolingo Max AI, and testing SRS from the terminal.
+Allows inspecting state, switching languages, grading answers, running Forge AI Tutor, and testing SRS from the terminal.
 """
 
 import argparse
@@ -10,7 +10,7 @@ from lingo_engine import LingoForgeEngine
 
 
 def main():
-    parser = argparse.ArgumentParser(description="LingoForge Duolingo & Duolingo Max CLI")
+    parser = argparse.ArgumentParser(description="LingoForge Polyglot & Forge AI Studio CLI")
     sub = parser.add_subparsers(dest="cmd")
 
     sub.add_parser("state", help="Print current profile, course units, SRS words, and leaderboard")
@@ -18,7 +18,7 @@ def main():
     p_lang = sub.add_parser("switch-lang", help="Switch active language course")
     p_lang.add_argument("lang_code", help="Language code (es, fr, ja, de, it, ko, zh, pt, ru, ar)")
 
-    p_explain = sub.add_parser("explain", help="Run Duolingo Max Explain My Answer")
+    p_explain = sub.add_parser("explain", help="Run Forge AI Explain My Answer")
     p_explain.add_argument("--lang", default="es")
     p_explain.add_argument("--prompt", required=True)
     p_explain.add_argument("--user", required=True)
